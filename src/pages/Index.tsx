@@ -92,17 +92,17 @@ const Index = () => {
             </Button>
             <Button
               size="lg"
-              variant="outline"
+              variant="secondary"
               onClick={() => setCurrentView("user")}
-              className="text-lg px-8 py-3 bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="text-lg px-8 py-3"
             >
               Player Login
             </Button>
             <Button
               size="lg"
-              variant="outline"
+              variant="secondary"
               onClick={() => setCurrentView("admin")}
-              className="text-lg px-8 py-3 bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="text-lg px-8 py-3"
             >
               Admin Login
             </Button>
