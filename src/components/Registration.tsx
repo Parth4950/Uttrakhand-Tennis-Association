@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { apiService } from "../services/api";
 
 interface RegistrationProps {
   onBack: () => void;
+  initialData?: PlayerData;
 }
 
 export interface PlayerData {
@@ -35,25 +35,27 @@ export interface EventSelection {
   partner2: string;
 }
 
-const Registration = ({ onBack }: RegistrationProps) => {
+const Registration = ({ onBack, initialData }: RegistrationProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [playerId, setPlayerId] = useState<number | null>(null);
-  const [playerData, setPlayerData] = useState<PlayerData>({
-    name: "",
-    whatsapp: "",
-    dateOfBirth: "",
-    email: "",
-    address: "",
-    emergencyContact: "",
-    playingExperience: "",
-    medicalConditions: "",
-    city: "",
-    shirtSize: "",
-    shortSize: "",
-    foodPref: "",
-    stayYorN: false,
-  });
+  const [playerData, setPlayerData] = useState<PlayerData>(
+    initialData || {
+      name: "",
+      whatsapp: "",
+      dateOfBirth: "",
+      email: "",
+      address: "",
+      emergencyContact: "",
+      playingExperience: "",
+      medicalConditions: "",
+      city: "",
+      shirtSize: "",
+      shortSize: "",
+      foodPref: "",
+      stayYorN: false,
+    }
+  );
   const [eventData, setEventData] = useState<EventSelection>({
     event1: "",
     partner1: "",
