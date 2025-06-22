@@ -1,54 +1,99 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+---
 
-Currently, two official plugins are available:
+# Uttranchal Tennis Association Website
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+A full-stack web application for the Uttranchal Tennis Association, providing player registration, event management, and administrative tools.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Table of Contents
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+  - [Frontend Setup](#frontend-setup)
+  - [Backend Setup](#backend-setup)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Features
+
+- Player registration with multi-step forms
+- Admin dashboard for managing players, events, and partners
+- User authentication (login for users and admins)
+- Event listing and management
+- Responsive and modern UI
+
+---
+
+## Tech Stack
+
+- **Frontend:** React, TypeScript, Tailwind CSS, Vite
+- **Backend:** Python (Flask), SQLite
+- **Other:** RESTful APIs, Custom UI components
+
+---
+
+## Getting Started
+
+### Frontend Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+3. **Open in browser:**  
+   Visit [http://localhost:8080](http://localhost:8080)
+
+### Backend Setup
+
+1. **Navigate to backend directory:**
+   ```bash
+   cd backend
+   ```
+2. **Create a virtual environment (optional but recommended):**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. **Set up the database:**
+   ```bash
+   python database.py
+   ```
+5. **Run the backend server:**
+   ```bash
+   python app.py
+   ```
+6. **API will be available at:**  
+   [http://localhost:5000](http://localhost:5000)
+
+---
+
+## Project Structure
+
+```
+Uttranchal Tennis Association Website/
+  backend/                # Flask backend (API, DB, routes)
+  src/                    # React frontend source code
+    components/           # React components (UI, forms, dashboards)
+    pages/                # Page-level components
+    services/             # API service layer
+    hooks/                # Custom React hooks
+  public/                 # Static assets
+  index.html              # Main HTML file
+  package.json            # Frontend dependencies
+  README.md               # Project documentation
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
