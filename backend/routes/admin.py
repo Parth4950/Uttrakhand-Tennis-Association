@@ -1,20 +1,22 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
-from database import get_db_connection
-from mysql.connector import Error
+from db import get_db_connection  # Adjust import if needed
 
 admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/registrations', methods=['GET'])
 @jwt_required()
 def get_all_registrations():
-    connection = get_db_connection()
-    if not connection:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
+    connection = None
+    cursor = None
+
     try:
-        cursor = connection.cursor(dictionary=True)
-         # Query to get all player registrations with their partners
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        cursor = connection.cursor()
+
         query = """
         SELECT 
             p.id as player_id,
@@ -31,29 +33,53 @@ def get_all_registrations():
         LEFT JOIN tbl_players partner ON pt.partner_id = partner.id
         ORDER BY p.name, pt.event_name
         """
-        
+
         cursor.execute(query)
-        registrations = cursor.fetchall()
+        rows = cursor.fetchall()
+
+        # Convert to list of dictionaries
+        columns = [desc[0] for desc in cursor.description]
+        registrations = [dict(zip(columns, row)) for row in rows]
+
         return jsonify(registrations)
-    except Error as e:
+
+    except Exception as e:
         print(f"Database error: {e}")
         return jsonify({'error': str(e)}), 500
+
     finally:
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 
 @admin_bp.route('/statistics', methods=['GET'])
 @jwt_required()
 def get_event_statistics():
-    connection = get_db_connection()
-    if not connection:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
+    connection = None
+    cursor = None
+
     try:
-        cursor = connection.cursor(dictionary=True)
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        cursor = connection.cursor()
         cursor.execute("SELECT * FROM event_statistics")
-        statistics = cursor.fetchall()
+        rows = cursor.fetchall()
+
+        columns = [desc[0] for desc in cursor.description]
+        statistics = [dict(zip(columns, row)) for row in rows]
+
         return jsonify(statistics)
-    except Error as e:
+
+    except Exception as e:
+        print(f"Statistics error: {e}")
         return jsonify({'error': str(e)}), 500
+
     finally:
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()

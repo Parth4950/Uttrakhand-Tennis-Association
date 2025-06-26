@@ -34,7 +34,7 @@ const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1
     
     if (!formData.whatsapp.trim()) {
       errors.whatsapp = 'WhatsApp number is required';
-    } else if (!/^\+?[1-9]\d{10,14}$/.test(formData.whatsapp.replace(/\s/g, ''))) {
+    } else if (!/^(\+91)?[6-9]\d{9}$/.test(formData.whatsapp.replace(/\s/g, ''))) {
       errors.whatsapp = 'Please enter a valid WhatsApp number';
     }
     

@@ -1,23 +1,21 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from database import get_db_connection
-from mysql.connector import Error
+from db import get_db_connection  # Adjust path if needed
 
 players_bp = Blueprint('players', __name__)
 
 @players_bp.route('', methods=['POST'])
 def create_player():
     data = request.get_json()
-    
-    connection = get_db_connection()
-    if not connection:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
+    connection = None
+    cursor = None
+
     try:
+        connection = get_db_connection()
         cursor = connection.cursor()
         query = """
         INSERT INTO tbl_players (name, whatsapp_number, date_of_birth, email, city, 
-                               shirt_size, short_size, food_pref, stay_y_or_n, fee_paid)
+                                 shirt_size, short_size, food_pref, stay_y_or_n, fee_paid)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         values = (
@@ -36,44 +34,54 @@ def create_player():
         connection.commit()
         player_id = cursor.lastrowid
         return jsonify({'message': 'Player created successfully', 'id': player_id})
-    except Error as e:
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
-        connection.close()
+        if cursor: cursor.close()
+        if connection: connection.close()
+
 
 @players_bp.route('', methods=['GET'])
 @jwt_required()
 def get_players():
-    connection = get_db_connection()
-    if not connection:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
+    connection = None
+    cursor = None
+
     try:
-        cursor = connection.cursor(dictionary=True)
+        connection = get_db_connection()
+        cursor = connection.cursor()
         cursor.execute("SELECT * FROM tbl_players ORDER BY created_at DESC")
-        players = cursor.fetchall()
+        rows = cursor.fetchall()
+
+        columns = [desc[0] for desc in cursor.description]
+        players = [dict(zip(columns, row)) for row in rows]
+
         return jsonify(players)
-    except Error as e:
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
-        connection.close()
+        if cursor: cursor.close()
+        if connection: connection.close()
+
 
 @players_bp.route('/dashboard/<int:player_id>', methods=['GET'])
 def get_player_dashboard(player_id):
-    connection = get_db_connection()
-    if not connection:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
+    connection = None
+    cursor = None
+
     try:
-        cursor = connection.cursor(dictionary=True)
-        
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
         # Get player info
         cursor.execute("SELECT * FROM tbl_players WHERE id = %s", (player_id,))
-        player = cursor.fetchone()
-        
-        if not player:
+        player_row = cursor.fetchone()
+        if not player_row:
             return jsonify({'error': 'Player not found'}), 404
-        
+
+        columns = [desc[0] for desc in cursor.description]
+        player = dict(zip(columns, player_row))
+
         # Get player's events and partners
         cursor.execute("""
             SELECT 
@@ -89,13 +97,17 @@ def get_player_dashboard(player_id):
             WHERE pt.user_id = %s
             ORDER BY pt.event_name
         """, (player_id,))
-        events = cursor.fetchall()
-        
+        event_rows = cursor.fetchall()
+        event_columns = [desc[0] for desc in cursor.description]
+        events = [dict(zip(event_columns, row)) for row in event_rows]
+
         return jsonify({
             'player': player,
             'events': events
         })
-    except Error as e:
+
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
-        connection.close()
+        if cursor: cursor.close()
+        if connection: connection.close()

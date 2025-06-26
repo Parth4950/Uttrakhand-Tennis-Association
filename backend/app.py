@@ -1,5 +1,6 @@
 
 from flask import Flask
+from db import get_db_connection
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
@@ -42,3 +43,16 @@ if __name__ == '__main__':
     for rule in app.url_map.iter_rules():
         print(f"  {rule.endpoint}: {rule.rule} [{', '.join(rule.methods)}]")
     app.run(debug=True, host='0.0.0.0', port=5000)
+@app.route('/api/debug-db', methods=['GET'])
+def debug_db():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT DATABASE();")
+        db = cur.fetchone()
+        cur.close()
+        conn.close()
+        return {'connected_to': db[0]}
+    except Exception as e:
+        return {'error': str(e)}
+
