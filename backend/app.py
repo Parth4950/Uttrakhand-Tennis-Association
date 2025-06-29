@@ -21,6 +21,7 @@ CORS(
     ],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"]
+    supports_credentials=True
 )
 
 # Register blueprints

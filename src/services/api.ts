@@ -1,5 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
-
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 class ApiService {
   private token: string | null = null;
 
@@ -8,10 +7,11 @@ class ApiService {
     this.token = localStorage.getItem('auth_token');
     console.log('ApiService initialized, token:', this.token ? 'Present' : 'Missing');
     console.log('Token value (first 20 chars):', this.token ? this.token.substring(0, 20) + '...' : 'null');
+    console.log('BASE_URL:', BASE_URL); 
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers,
