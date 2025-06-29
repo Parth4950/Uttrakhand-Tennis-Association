@@ -5,6 +5,15 @@ from flask_jwt_extended import JWTManager
 from config import Config
 
 app = Flask(__name__)
+from flask import request, make_response
+
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.status_code = 200
+        return response
+
 app.config['JWT_SECRET_KEY'] = Config.JWT_SECRET_KEY
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = Config.JWT_ACCESS_TOKEN_EXPIRES
 
