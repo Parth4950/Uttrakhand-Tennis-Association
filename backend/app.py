@@ -20,8 +20,8 @@ CORS(
         "http://localhost:8082", "http://localhost:8083"
     ],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"]
-    supports_credentials=True
+    allow_headers=["Content-Type", "Authorization"],
+    supports_credentials=True,
 )
 
 # Register blueprints
