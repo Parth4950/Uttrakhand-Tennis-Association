@@ -62,7 +62,7 @@ class ApiService {
     console.log('Attempting admin login...');
     
     try {
-      const response = await this.request('/auth/login', {
+      const response = await this.request('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
@@ -91,7 +91,7 @@ class ApiService {
   // User login method (no JWT required)
   async userLogin(whatsapp: string, dateOfBirth: string) {
     console.log("📬 userLogin() called with:", { whatsapp, dateOfBirth });
-    const response = await this.request('/auth/user-login', {
+    const response = await this.request('/api/auth/user-login', {
       method: 'POST',
       body: JSON.stringify({ 
         whatsapp: whatsapp, 
@@ -165,9 +165,9 @@ class ApiService {
         throw new Error('No authentication token available');
       }
       
-      console.log('Making test request to /admin/registrations');
+      console.log('Making test request to /api/admin/registrations');
       // Make a simple authenticated request
-      await this.request('/admin/registrations');
+      await this.request('/api/admin/registrations');
       console.log('Authentication test successful');
       return true;
     } catch (error) {
@@ -178,11 +178,11 @@ class ApiService {
 
   // Events methods
   async getEvents() {
-    return this.request('/events');
+    return this.request('/api/events');
   }
 
   async createEvent(eventName: string) {
-    return this.request('/events', {
+    return this.request('/api/events', {
       method: 'POST',
       body: JSON.stringify({ event_name: eventName }),
     });
@@ -190,34 +190,34 @@ class ApiService {
 
   // Players methods
   async createPlayer(playerData: any) {
-    return this.request('/players', {
+    return this.request('/api/players', {
       method: 'POST',
       body: JSON.stringify(playerData),
     });
   }
 
   async getPlayers() {
-    return this.request('/players');
+    return this.request('/api/players');
   }
 
   async getPlayerDashboard(playerId: number) {
-    return this.request(`/players/dashboard/${playerId}`);
+    return this.request(`/api/players/dashboard/${playerId}`);
   }
 
   // Partners methods
   async createPartner(partnerData: any) {
-    return this.request('/partners', {
+    return this.request('/api/partners', {
       method: 'POST',
       body: JSON.stringify(partnerData),
     });
   }
 
   async getAvailablePartners(eventName: string, currentUserId: number) {
-    return this.request(`/partners/available/${eventName}/${currentUserId}`);
+    return this.request(`/api/partners/available/${eventName}/${currentUserId}`);
   }
 
   async updatePartnerRelationship(eventName: string, user1Id: number, user2Id: number) {
-    return this.request('/partners/update-relationship', {
+    return this.request('/api/partners/update-relationship', {
       method: 'POST',
       body: JSON.stringify({
         event_name: eventName,
@@ -234,7 +234,7 @@ class ApiService {
     event2_name?: string;
     partner2_id?: number;
   }) {
-    return this.request('/partners/register-events', {
+    return this.request('/api/partners/register-events', {
       method: 'POST',
       body: JSON.stringify(registrationData),
     });
@@ -242,7 +242,7 @@ class ApiService {
 
   // New method to update rankings
   async updateRanking(playerId: number, eventName: string, ranking: number) {
-    return this.request('/partners/update-ranking', {
+    return this.request('/api/partners/update-ranking', {
       method: 'POST',
       body: JSON.stringify({
         player_id: playerId,
@@ -263,8 +263,8 @@ class ApiService {
     }
     
     try {
-      console.log('Making request to /admin/registrations');
-      const result = await this.request('/admin/registrations');
+      console.log('Making request to /api/admin/registrations');
+      const result = await this.request('/api/admin/registrations');
       console.log('getAllRegistrations completed successfully');
       return result;
     } catch (error) {
@@ -277,7 +277,7 @@ class ApiService {
     if (!this.isAuthenticated()) {
       throw new Error('Not authenticated. Please login first.');
     }
-    return this.request('/admin/statistics');
+    return this.request('/api/admin/statistics');
   }
 }
 
