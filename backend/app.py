@@ -27,9 +27,10 @@ CORS(
         "http://localhost:5173", "http://127.0.0.1:5173",
         "http://localhost:8080", "http://localhost:8081",
         "http://localhost:8082", "http://localhost:8083",
-        "uttrakhand-tennis-association-git-main-parth-chandnas-projects.vercel.app",
-        "uttrakhand-tennis-association-hg76fqlnk-parth-chandnas-projects.vercel.app",
-        "uttrakhand-tennis-association-5l5m.vercel.app"
+        "https://uttrakhand-tennis-association-git-main-parth-chandnas-projects.vercel.app",
+        "https://uttrakhand-tennis-association-hg76fqlnk-parth-chandnas-projects.vercel.app",
+        "https://uttrakhand-tennis-association-5l5m.vercel.app"
+        "https://uttrakhand-tennis-association.vercel.app/"
     ],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
