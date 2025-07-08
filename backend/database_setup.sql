@@ -36,9 +36,9 @@ CREATE TABLE tbl_partners (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (event_name) REFERENCES tbl_eventname(event_name) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES tbl_players(id) ON DELETE CASCADE,
-    FOREIGN KEY (partner_id) REFERENCES tbl_players(id) ON DELETE SET NULL,
-    CONSTRAINT chk_no_self_partner CHECK (user_id != partner_id OR partner_id IS NULL)
+    FOREIGN KEY (partner_id) REFERENCES tbl_players(id) ON DELETE SET NULL
 );
+
 
 -- Create indexes for better performance
 CREATE INDEX idx_partners_event_user ON tbl_partners(event_name, user_id);
@@ -76,32 +76,27 @@ DELIMITER ;
 
 -- Stored procedure to get available partners for an event
 DELIMITER //
+DROP PROCEDURE IF EXISTS GetAvailablePartners;
 CREATE PROCEDURE GetAvailablePartners(
     IN event_name_param VARCHAR(255),
     IN current_user_id INT
 )
 BEGIN
     SELECT 
-        p.id as user_id,
-        p.name as player_name,
+        p.id AS user_id,
+        p.name AS player_name,
         CASE 
-            WHEN EXISTS (
-                SELECT 1 FROM tbl_partners tp 
-                WHERE tp.event_name = event_name_param 
-                AND tp.user_id = p.id 
-                AND tp.partner_id IS NOT NULL
-            ) THEN TRUE
+            WHEN tp.partner_id IS NOT NULL THEN TRUE
             ELSE FALSE
-        END as has_partner
+        END AS has_partner
     FROM tbl_players p
-    WHERE p.id IN (
-        SELECT tp.user_id 
-        FROM tbl_partners tp 
-        WHERE tp.event_name = event_name_param
-        AND tp.user_id != current_user_id
-    );
+    JOIN tbl_partners tp ON p.id = tp.user_id
+    WHERE tp.event_name = event_name_param
+      AND tp.user_id != current_user_id
+      AND (tp.partner_id IS NULL OR tp.partner_id != current_user_id);
 END //
 DELIMITER ;
+
 
 -- Stored procedure to update partner relationship
 DELIMITER //

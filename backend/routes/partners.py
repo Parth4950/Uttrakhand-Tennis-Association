@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from db import get_db_connection  # adjust this path as needed
+from db import get_db_connection  
 
 partners_bp = Blueprint('partners', __name__)
 
@@ -39,21 +39,29 @@ def get_available_partners(event_name, current_user_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
+
+        # Call the stored procedure
         cursor.callproc('GetAvailablePartners', [event_name, current_user_id])
 
-        # Extract result set from stored procedure
-        for result in cursor.stored_results():
-            rows = result.fetchall()
-            columns = [desc[0] for desc in result.description]
-            partners = [dict(zip(columns, row)) for row in rows]
-            return jsonify(partners)
+        # SAFELY extract the result set
+        stored_results = list(cursor.stored_results())
+        if not stored_results:
+            return jsonify({'error': 'No results returned from GetAvailablePartners'}), 404
 
-        return jsonify([])  # If no result set
+        result = stored_results[0]
+        rows = result.fetchall()
+        columns = [desc[0] for desc in result.description]
+        partners = [dict(zip(columns, row)) for row in rows]
+
+        return jsonify(partners)
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
+
 
 
 @partners_bp.route('/update-relationship', methods=['POST'])
