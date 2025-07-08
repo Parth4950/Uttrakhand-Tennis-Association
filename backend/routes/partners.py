@@ -44,22 +44,14 @@ def get_available_partners(event_name, current_user_id):
         cursor.callproc('GetAvailablePartners', [event_name, current_user_id])
 
         # Try logging the stored results
-        results = list(cursor.stored_results())
-        print(f"Stored results: {results}")
+        result = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        partners = [dict(zip(columns, row)) for row in result]
 
-        if not results:
-            return jsonify([])  # no data found
-
-        result = results[0]
-        rows = result.fetchall()
-        columns = [desc[0] for desc in result.description]
-        partners = [dict(zip(columns, row)) for row in rows]
-
-        print(f"Returning {len(partners)} available partners")
         return jsonify(partners)
 
     except Exception as e:
-        print("Exception in /available route:", str(e))
+        print("Error in get_available_partners:", str(e))
         return jsonify({'error': str(e)}), 500
     finally:
         if cursor: cursor.close()
