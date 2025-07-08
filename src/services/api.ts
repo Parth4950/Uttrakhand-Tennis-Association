@@ -212,8 +212,8 @@ class ApiService {
     });
   }
 
-  async getAvailablePartners(eventName: string, currentUserId: number) {
-  const encodedEvent = encodeURIComponent(eventName);
+ async getAvailablePartners(eventName: string, currentUserId: number) {
+  const encodedEvent = encodeURIComponent(eventName); 
   return this.request(`/api/partners/available/${encodedEvent}/${currentUserId}`);
 }
 
