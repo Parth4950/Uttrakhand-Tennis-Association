@@ -40,17 +40,13 @@ def user_login():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-            
-        whatsapp = data.get('whatsapp_number')
+        whatsapp = data.get('whatsapp')
         date_of_birth = data.get('date_of_birth')
         
         if not whatsapp or not date_of_birth:
             return jsonify({'error': 'WhatsApp number and date of birth are required'}), 400
         
         connection = get_db_connection()
-        if not connection:
-            return jsonify({'error': 'Database connection failed'}), 500
-        
         cursor = connection.cursor()
         cursor.execute(
             "SELECT * FROM tbl_players WHERE whatsapp_number = %s AND date_of_birth = %s", 
@@ -59,7 +55,6 @@ def user_login():
         result = cursor.fetchone()
         
         if result:
-            # Convert tuple result to dictionary manually
             columns = [desc[0] for desc in cursor.description]
             user = dict(zip(columns, result))
 
@@ -93,8 +88,7 @@ def user_login():
             return jsonify({'error': 'Invalid WhatsApp number or date of birth'}), 401
             
     except Exception as e:
-            return jsonify({'error': str(e)}), 500
-
+        return jsonify({'error': str(e)}), 500
     finally:
         if cursor:
             cursor.close()
