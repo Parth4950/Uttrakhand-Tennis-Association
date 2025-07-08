@@ -213,8 +213,10 @@ class ApiService {
   }
 
   async getAvailablePartners(eventName: string, currentUserId: number) {
-    return this.request(`/api/partners/available/${eventName}/${currentUserId}`);
-  }
+  const encodedEvent = encodeURIComponent(eventName);
+  return this.request(`/api/partners/available/${encodedEvent}/${currentUserId}`);
+}
+
 
   async updatePartnerRelationship(eventName: string, user1Id: number, user2Id: number) {
     return this.request('/api/partners/update-relationship', {
