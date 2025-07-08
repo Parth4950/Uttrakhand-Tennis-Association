@@ -40,24 +40,31 @@ def get_available_partners(event_name, current_user_id):
         connection = get_db_connection()
         cursor = connection.cursor()
 
+        print(f"Calling procedure GetAvailablePartners with: event='{event_name}', user_id={current_user_id}")
         cursor.callproc('GetAvailablePartners', [event_name, current_user_id])
 
-        stored = list(cursor.stored_results())
-        if not stored:
-            return jsonify([])
+        # Try logging the stored results
+        results = list(cursor.stored_results())
+        print(f"Stored results: {results}")
 
-        result = stored[0]
+        if not results:
+            return jsonify([])  # no data found
+
+        result = results[0]
         rows = result.fetchall()
         columns = [desc[0] for desc in result.description]
         partners = [dict(zip(columns, row)) for row in rows]
+
+        print(f"Returning {len(partners)} available partners")
         return jsonify(partners)
 
     except Exception as e:
-        print("ERROR in GetAvailablePartners:", str(e))
+        print("Exception in /available route:", str(e))
         return jsonify({'error': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
+
 
 
 
