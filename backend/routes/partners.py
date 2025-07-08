@@ -40,27 +40,25 @@ def get_available_partners(event_name, current_user_id):
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        # Call the stored procedure
         cursor.callproc('GetAvailablePartners', [event_name, current_user_id])
 
-        # SAFELY extract the result set
-        stored_results = list(cursor.stored_results())
-        if not stored_results:
-            return jsonify({'error': 'No results returned from GetAvailablePartners'}), 404
+        stored = list(cursor.stored_results())
+        if not stored:
+            return jsonify([])
 
-        result = stored_results[0]
+        result = stored[0]
         rows = result.fetchall()
         columns = [desc[0] for desc in result.description]
         partners = [dict(zip(columns, row)) for row in rows]
-
         return jsonify(partners)
 
     except Exception as e:
+        print("ERROR in GetAvailablePartners:", str(e))
         return jsonify({'error': str(e)}), 500
-
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
+
 
 
 
