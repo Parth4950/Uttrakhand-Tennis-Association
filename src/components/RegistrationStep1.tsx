@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,12 @@ interface RegistrationStep1Props {
 
 const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1Props) => {
   const [formData, setFormData] = useState<PlayerData>(initialData);
+ useEffect(() => {
+    if (initialData.id) {
+     setFormData(prev => ({ ...prev, id: initialData.id }));
+  }
+}, [initialData]);
+
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (field: keyof PlayerData, value: string | boolean) => {

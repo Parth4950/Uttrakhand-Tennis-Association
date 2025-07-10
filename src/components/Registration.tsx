@@ -13,6 +13,7 @@ interface RegistrationProps {
 }
 
 export interface PlayerData {
+  id?: number;
   name: string;
   whatsapp: string;
   dateOfBirth: string;
@@ -68,6 +69,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
     setIsLoading(true);
     try {
       const playerPayload = {
+        id: data.id,
         name: data.name,
         whatsapp_number: data.whatsapp,
         date_of_birth: data.dateOfBirth,
@@ -79,6 +81,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
         stay_y_or_n: data.stayYorN,
         fee_paid: false
       };
+      console.log("Sending player payload", playerPayload);
 
       const response = await apiService.createPlayer(playerPayload);
       

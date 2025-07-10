@@ -5,7 +5,7 @@ from db import get_db_connection  # Adjust path if needed
 players_bp = Blueprint('players', __name__)
 
 @players_bp.route('', methods=['POST'])
-def create_player():
+def create_or_update_player():
     data = request.get_json()
     connection = None
     cursor = None
@@ -13,32 +13,75 @@ def create_player():
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-        query = """
-        INSERT INTO tbl_players (name, whatsapp_number, date_of_birth, email, city, 
-                                 shirt_size, short_size, food_pref, stay_y_or_n, fee_paid)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        values = (
-            data.get('name'),
-            data.get('whatsapp_number'),
-            data.get('date_of_birth'),
-            data.get('email'),
-            data.get('city'),
-            data.get('shirt_size'),
-            data.get('short_size'),
-            data.get('food_pref'),
-            data.get('stay_y_or_n', False),
-            data.get('fee_paid', False)
-        )
-        cursor.execute(query, values)
-        connection.commit()
-        player_id = cursor.lastrowid
-        return jsonify({'message': 'Player created successfully', 'id': player_id})
+
+        player_id = data.get('id')  # Only present if editing
+        whatsapp = data.get('whatsapp_number')
+
+        # Check for duplicate WhatsApp number (exclude current user if editing)
+        if player_id:
+            cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s AND id != %s", (whatsapp, player_id))
+        else:
+            cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s", (whatsapp,))
+        
+        if cursor.fetchone():
+            return jsonify({'error': 'WhatsApp number already registered'}), 400
+
+        if player_id:
+            # UPDATE existing player
+            query = """
+                UPDATE tbl_players SET
+                    name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
+                    shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s
+                WHERE id = %s
+            """
+            values = (
+                data.get('name'),
+                whatsapp,
+                data.get('date_of_birth'),
+                data.get('email'),
+                data.get('city'),
+                data.get('shirt_size'),
+                data.get('short_size'),
+                data.get('food_pref'),
+                data.get('stay_y_or_n', False),
+                data.get('fee_paid', False),
+                player_id
+            )
+            cursor.execute(query, values)
+            connection.commit()
+            return jsonify({'message': 'Player updated successfully', 'id': player_id})
+        
+        else:
+            # INSERT new player
+            query = """
+                INSERT INTO tbl_players (
+                    name, whatsapp_number, date_of_birth, email, city, 
+                    shirt_size, short_size, food_pref, stay_y_or_n, fee_paid
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (
+                data.get('name'),
+                whatsapp,
+                data.get('date_of_birth'),
+                data.get('email'),
+                data.get('city'),
+                data.get('shirt_size'),
+                data.get('short_size'),
+                data.get('food_pref'),
+                data.get('stay_y_or_n', False),
+                data.get('fee_paid', False)
+            )
+            cursor.execute(query, values)
+            connection.commit()
+            return jsonify({'message': 'Player created successfully', 'id': cursor.lastrowid})
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
+
 
 
 @players_bp.route('', methods=['GET'])

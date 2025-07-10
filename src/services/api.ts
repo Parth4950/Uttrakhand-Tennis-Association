@@ -190,6 +190,7 @@ class ApiService {
 
   // Players methods
   async createPlayer(playerData: any) {
+  console.log("Sending player payload", playerData);
     return this.request('/api/players', {
       method: 'POST',
       body: JSON.stringify(playerData),
