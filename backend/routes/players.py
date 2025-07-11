@@ -6,7 +6,7 @@ players_bp = Blueprint('players', __name__)
 
 @players_bp.route('', methods=['POST'])
 def create_or_update_player():
-    data = request.get_json()
+    data = request.get_json()   
     connection = None
     cursor = None
 
@@ -151,6 +151,30 @@ def get_player_dashboard(player_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection: connection.close()
+@players_bp.route('/ranking', methods=['PUT'])
+def update_ranking():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    event_name = data.get('event_name')
+    ranking = data.get('ranking')
+
+    # Validate input
+    if not all([user_id, event_name, ranking is not None]):
+        return jsonify({'error': 'Missing user_id, event_name, or ranking'}), 400
+
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.callproc('UpdatePlayerRanking', (user_id, event_name, ranking))
+        connection.commit()
+        return jsonify({'message': 'Ranking updated successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
     finally:
         if cursor: cursor.close()
         if connection: connection.close()

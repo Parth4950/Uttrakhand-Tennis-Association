@@ -285,3 +285,20 @@ BEGIN
     SELECT * FROM player_events_view ORDER BY player_name, event_name;
 END //
 DELIMITER ;
+DELIMITER //
+CREATE PROCEDURE UpdatePlayerRanking(
+    IN p_user_id INT,
+    IN p_event_name VARCHAR(255),
+    IN p_ranking INT
+)
+BEGIN
+    UPDATE tbl_partners
+    SET ranking = p_ranking
+    WHERE user_id = p_user_id AND event_name = p_event_name;
+
+    IF ROW_COUNT() = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No matching registration found to update';
+    END IF;
+END //
+DELIMITER ;
