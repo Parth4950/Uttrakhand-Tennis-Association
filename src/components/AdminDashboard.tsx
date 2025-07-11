@@ -117,11 +117,11 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   };
 
   function handleRankingChange(playerId: number, eventName: string, ranking: string) {
-    // Find all events for this player
+    // Find all events for this player in registrations (i.e., only registered events)
     const playerEvents = registrations.filter(reg => reg.player_id === playerId);
     setRankings(prev => {
       const updated = { ...prev };
-      // If the admin is entering a ranking for the first time for this player, fill all their events
+      // If the admin is entering a ranking for the first time for this player, fill all their registered events
       const isFirstRanking = playerEvents.every(ev => !prev[`${playerId}-${ev.event_name}`] || prev[`${playerId}-${ev.event_name}`] === "");
       if (isFirstRanking) {
         playerEvents.forEach(ev => {
@@ -138,19 +138,20 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   async function saveRankings() {
     try {
       setLoading(true);
-      // Save all rankings for all events
-      const updates = Object.entries(rankings).map(([key, ranking]) => {
-        const [playerId, eventName] = key.split('-');
-        return {
-          player_id: parseInt(playerId),
-          event_name: eventName,
-          ranking: ranking === "" ? null : parseInt(ranking)
-        };
-      });
+      // Only update rankings for player-event pairs that exist in registrations
+      const validKeys = registrations.map(reg => `${reg.player_id}-${reg.event_name}`);
+      const updates = Object.entries(rankings)
+        .filter(([key, ranking]) => validKeys.includes(key) && ranking !== "")
+        .map(([key, ranking]) => {
+          const [playerId, eventName] = key.split('-');
+          return {
+            player_id: parseInt(playerId),
+            event_name: eventName,
+            ranking: parseInt(ranking)
+          };
+        });
       for (const update of updates) {
-        if (update.ranking !== null) {
-          await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
-        }
+        await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
       }
       toast({
         title: "Rankings Saved!",
