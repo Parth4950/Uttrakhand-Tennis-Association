@@ -117,40 +117,45 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   };
 
   function handleRankingChange(playerId: number, eventName: string, ranking: string) {
-    const key = `${playerId}-${eventName}`;
-    setRankings(prev => ({
-      ...prev,
-      [key]: ranking,
-    }));
+    // Find all events for this player
+    const playerEvents = registrations.filter(reg => reg.player_id === playerId);
+    setRankings(prev => {
+      const updated = { ...prev };
+      // If the admin is entering a ranking for the first time for this player, fill all their events
+      const isFirstRanking = playerEvents.every(ev => !prev[`${playerId}-${ev.event_name}`] || prev[`${playerId}-${ev.event_name}`] === "");
+      if (isFirstRanking) {
+        playerEvents.forEach(ev => {
+          updated[`${playerId}-${ev.event_name}`] = ranking;
+        });
+      } else {
+        // Otherwise, just update the current event
+        updated[`${playerId}-${eventName}`] = ranking;
+      }
+      return updated;
+    });
   }
 
   async function saveRankings() {
-    if (!selectedEvent) return;
-
     try {
       setLoading(true);
+      // Save all rankings for all events
       const updates = Object.entries(rankings).map(([key, ranking]) => {
-        const [playerId] = key.split('-');
+        const [playerId, eventName] = key.split('-');
         return {
           player_id: parseInt(playerId),
-          event_name: selectedEvent,
-          ranking: parseInt(ranking) || null
+          event_name: eventName,
+          ranking: ranking === "" ? null : parseInt(ranking)
         };
       });
-
-      // Save rankings using the backend API
       for (const update of updates) {
         if (update.ranking !== null) {
           await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
         }
       }
-
       toast({
         title: "Rankings Saved!",
-        description: `Rankings for ${selectedEvent} have been saved successfully.`,
+        description: `All rankings have been saved successfully.`,
       });
-
-      // Reload data to show updated rankings
       await loadAllRegistrations();
     } catch (error) {
       console.error('Error saving rankings:', error);
