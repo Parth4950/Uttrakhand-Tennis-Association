@@ -117,20 +117,23 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   };
 
   function handleRankingChange(playerId: number, eventName: string, ranking: string) {
-    // Find all events for this player in registrations (i.e., only registered events)
-    const playerEvents = registrations.filter(reg => reg.player_id === playerId);
+    // Find all events for this player that are visible in the UI (filteredRegistrations)
+    const playerEvents = filteredRegistrations.filter(reg => reg.player_id === playerId);
     setRankings(prev => {
       const updated = { ...prev };
-      // If the admin is entering a ranking for the first time for this player, fill all their registered events
-      const isFirstRanking = playerEvents.every(ev => !prev[`${playerId}-${ev.event_name}`] || prev[`${playerId}-${ev.event_name}`] === "");
-      if (isFirstRanking) {
-        playerEvents.forEach(ev => {
-          updated[`${playerId}-${ev.event_name}`] = ranking;
-        });
-      } else {
-        // Otherwise, just update the current event
-        updated[`${playerId}-${eventName}`] = ranking;
-      }
+      // The value before this change (for this event)
+      const prevValue = prev[`${playerId}-${eventName}`];
+      // If the admin is entering a ranking for the first time for this player, or if the other events are empty or match the previous value, fill all their visible events
+      playerEvents.forEach(ev => {
+        const key = `${playerId}-${ev.event_name}`;
+        if (
+          key === `${playerId}-${eventName}` ||
+          !prev[key] || prev[key] === prevValue || prev[key] === ""
+        ) {
+          updated[key] = ranking;
+        }
+        // If the admin has already edited a different value for this event, do not overwrite it
+      });
       return updated;
     });
   }
@@ -138,8 +141,8 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   async function saveRankings() {
     try {
       setLoading(true);
-      // Only update rankings for player-event pairs that exist in registrations
-      const validKeys = registrations.map(reg => `${reg.player_id}-${reg.event_name}`);
+      // Only update rankings for player-event pairs that are visible in the UI (filteredRegistrations)
+      const validKeys = filteredRegistrations.map(reg => `${reg.player_id}-${reg.event_name}`);
       const updates = Object.entries(rankings)
         .filter(([key, ranking]) => validKeys.includes(key) && ranking !== "")
         .map(([key, ranking]) => {
