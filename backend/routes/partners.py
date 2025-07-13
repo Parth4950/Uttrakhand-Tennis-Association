@@ -191,3 +191,24 @@ def update_ranking():
             cursor.close()
         if connection:
             connection.close()
+
+
+@partners_bp.route('/delete-all/<int:player_id>', methods=['DELETE'])
+def delete_all_partners_for_player(player_id):
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM tbl_partners WHERE user_id = %s", (player_id,))
+        connection.commit()
+        return jsonify({'message': 'All event registrations deleted for player', 'player_id': player_id})
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()

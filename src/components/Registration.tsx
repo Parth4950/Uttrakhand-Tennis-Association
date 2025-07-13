@@ -37,9 +37,11 @@ export interface EventSelection {
 }
 
 const Registration = ({ onBack, initialData }: RegistrationProps) => {
+  const editMode = !!initialData;
+  type PlayerDataWithEvents = PlayerData & { events?: { event_name: string; partner_id?: number }[] };
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [playerId, setPlayerId] = useState<number | null>(null);
+  const [playerId, setPlayerId] = useState<number | null>(initialData?.id || null);
   const [playerData, setPlayerData] = useState<PlayerData>(
     initialData || {
       name: "",
@@ -57,11 +59,23 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       stayYorN: false,
     }
   );
-  const [eventData, setEventData] = useState<EventSelection>({
-    event1: "",
-    partner1: "",
-    event2: "",
-    partner2: "",
+  // Pre-fill eventData if initialData has event info
+  const [eventData, setEventData] = useState<EventSelection>(() => {
+    if (editMode && (initialData as PlayerDataWithEvents).events) {
+      const events = (initialData as PlayerDataWithEvents).events;
+      return {
+        event1: events[0]?.event_name || "",
+        partner1: events[0]?.partner_id ? String(events[0].partner_id) : "",
+        event2: events[1]?.event_name || "",
+        partner2: events[1]?.partner_id ? String(events[1].partner_id) : "",
+      };
+    }
+    return {
+      event1: "",
+      partner1: "",
+      event2: "",
+      partner2: "",
+    };
   });
   const { toast } = useToast();
 
@@ -69,7 +83,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
     setIsLoading(true);
     try {
       const playerPayload = {
-        id: data.id,
+        id: playerId, // Use existing ID if editing
         name: data.name,
         whatsapp_number: data.whatsapp,
         date_of_birth: data.dateOfBirth,
@@ -83,21 +97,23 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       };
       console.log("Sending player payload", playerPayload);
 
-      const response = await apiService.createPlayer(playerPayload);
-      
+      // If editing, update player, else create
+      let response;
+      if (editMode && playerId) {
+        response = await apiService.updatePlayer(playerId, playerPayload);
+      } else {
+        response = await apiService.createPlayer(playerPayload);
+      }
       setPlayerData(data);
-      setPlayerId(response.id);
+      setPlayerId(response.id || playerId);
       setCurrentStep(2);
-      
       toast({
         title: "Player Information Saved",
         description: "Now select your events and partners.",
       });
     } catch (error) {
-      console.error('Error creating player:', error);
-      
+      console.error('Error creating/updating player:', error);
       let errorMessage = "Failed to save player information. Please try again.";
-      
       if (error instanceof Error) {
         if (error.message.includes('already registered with this WhatsApp number and date of birth')) {
           errorMessage = "A player with this WhatsApp number and date of birth is already registered. Please check your information or contact support if you believe this is an error.";
@@ -107,7 +123,6 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           errorMessage = error.message;
         }
       }
-      
       toast({
         title: "Registration Error",
         description: errorMessage,
@@ -127,12 +142,13 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       });
       return;
     }
-
     setIsLoading(true);
     try {
+      // Remove all previous event registrations for this player if editing
+      if (editMode) {
+        await apiService.deleteAllPartnersForPlayer(playerId);
+      }
       const partnersToCreate = [];
-
-      // Add first event if selected
       if (data.event1) {
         partnersToCreate.push({
           event_name: data.event1,
@@ -140,8 +156,6 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           partner_id: data.partner1 === "not-registered" ? null : parseInt(data.partner1) || null,
         });
       }
-
-      // Add second event if selected
       if (data.event2) {
         partnersToCreate.push({
           event_name: data.event2,
@@ -149,12 +163,8 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           partner_id: data.partner2 === "not-registered" ? null : parseInt(data.partner2) || null,
         });
       }
-
-      // Create partner entries
       for (const partner of partnersToCreate) {
         await apiService.createPartner(partner);
-        
-        // Update partner relationship if partner was selected
         if (partner.partner_id) {
           await apiService.updatePartnerRelationship(
             partner.event_name,
@@ -163,14 +173,11 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           );
         }
       }
-
       setEventData(data);
-      
       toast({
-        title: "Registration Successful!",
-        description: "Your tournament registration has been completed successfully.",
+        title: editMode ? "Registration Updated!" : "Registration Successful!",
+        description: editMode ? "Your registration has been updated successfully." : "Your tournament registration has been completed successfully.",
       });
-      
       onBack();
     } catch (error) {
       console.error('Error completing registration:', error);

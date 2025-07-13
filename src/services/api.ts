@@ -338,6 +338,27 @@ class ApiService {
     });
   }
 
+  // Update player info
+  async updatePlayer(playerId: number, playerData: any) {
+    if (!playerId || playerId <= 0) {
+      throw new Error('Valid player ID is required');
+    }
+    return this.request(`/api/players/${playerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(playerData),
+    });
+  }
+
+  // Delete all partners for a player (used for edit mode)
+  async deleteAllPartnersForPlayer(playerId: number) {
+    if (!playerId || playerId <= 0) {
+      throw new Error('Valid player ID is required');
+    }
+    return this.request(`/api/partners/delete-all/${playerId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Admin methods
   async getAllRegistrations() {
     console.log('getAllRegistrations called');
