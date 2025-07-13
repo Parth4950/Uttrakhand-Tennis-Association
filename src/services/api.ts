@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 class ApiService {
   private token: string | null = null;
@@ -133,14 +133,31 @@ class ApiService {
       throw new Error('WhatsApp number and date of birth are required');
     }
     
-    const response = await this.request('/api/auth/user-login', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        whatsapp: whatsapp, 
-        date_of_birth: dateOfBirth 
-      }),
-    });
-    return response;
+    try {
+      const response = await this.request('/api/auth/user-login', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          whatsapp: whatsapp.trim(), 
+          date_of_birth: dateOfBirth.trim() 
+        }),
+      });
+      
+      console.log("📬 userLogin response:", response);
+      return response;
+    } catch (error) {
+      console.error("📬 userLogin error:", error);
+      
+      // Handle specific error cases
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid WhatsApp number or date of birth')) {
+          throw new Error('Invalid credentials. Please check your WhatsApp number and date of birth.');
+        } else if (error.message.includes('Database connection failed')) {
+          throw new Error('Server is temporarily unavailable. Please try again later.');
+        }
+      }
+      
+      throw error;
+    }
   }
 
   logout() {

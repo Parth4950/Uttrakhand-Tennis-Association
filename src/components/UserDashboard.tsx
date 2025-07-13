@@ -6,27 +6,52 @@ import { Badge } from "@/components/ui/badge";
 import Registration from "./Registration";
 import { PlayerData } from "./Registration";
 
+interface UserData {
+  id: number;
+  name: string;
+  whatsapp_number: string;
+  date_of_birth: string;
+  email: string;
+  city: string;
+  shirt_size: string;
+  short_size: string;
+  food_pref: string;
+  stay_y_or_n: boolean;
+  created_at: string;
+}
+
+interface EventData {
+  event_name: string;
+  partner_id: number | null;
+  partner_name: string;
+  ranking: number | null;
+}
+
 interface UserDashboardProps {
-  user: any;
+  user: {
+    player: UserData;
+    events: EventData[];
+  } | UserData;
   onBack: () => void;
   onHome: () => void;
 }
 
-function mapUserToPlayerData(user: any): PlayerData {
+function mapUserToPlayerData(user: UserData): PlayerData {
   return {
+    id: user.id,
     name: user.name || "",
-    whatsapp: user.whatsapp_number || user.whatsapp || "",
-    dateOfBirth: user.date_of_birth || user.dateOfBirth || "",
+    whatsapp: user.whatsapp_number || "",
+    dateOfBirth: user.date_of_birth || "",
     email: user.email || "",
-    address: user.address || "",
-    emergencyContact: user.emergency_contact || user.emergencyContact || "",
-    playingExperience: user.playing_experience || user.playingExperience || "",
-    medicalConditions: user.medical_conditions || user.medicalConditions || "",
+    address: "", // This field doesn't exist in DB, will be empty
+    emergencyContact: "", // This field doesn't exist in DB, will be empty
+    playingExperience: "", // This field doesn't exist in DB, will be empty
+    medicalConditions: "", // This field doesn't exist in DB, will be empty
     city: user.city || "",
-    shirtSize: user.shirt_size || user.shirtSize || "",
-    shortSize: user.short_size || user.shortSize || "",
-    foodPref: user.food_pref || user.foodPref || "",
-    stayYorN: user.stay_y_or_n ?? user.stayYorN ?? false,
+    shirtSize: user.shirt_size || "",
+    shortSize: user.short_size || "",
+    foodPref: user.food_pref || "",
+    stayYorN: user.stay_y_or_n ?? false,
   };
 }
 
@@ -39,13 +64,13 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
   };
 
   if (isEditing) {
-    const player = user.player || user;
+    const player = 'player' in user ? user.player : user;
     return <Registration initialData={mapUserToPlayerData(player)} onBack={handleEditComplete} />;
   }
 
   // Extract player data from the user object
-  const player = user.player || user;
-  const events = user.events || [];
+  const player = 'player' in user ? user.player : user;
+  const events = 'events' in user ? user.events : [];
 
   // Format date without time
   const formatDateOnly = (dateString: string) => {
@@ -147,7 +172,7 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
                 </h3>
                 <div className="space-y-4">
                   {events.length > 0 ? (
-                    events.map((event: any, index: number) => (
+                    events.map((event: EventData, index: number) => (
                       <Card key={index} className={`${index % 2 === 0 ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
                         <CardHeader className="pb-2">
                           <CardTitle className={`text-lg ${index % 2 === 0 ? 'text-green-800' : 'text-blue-800'}`}>
@@ -185,7 +210,12 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
   );
 };
 
-const Label = ({ className, children, ...props }: any) => (
+interface LabelProps {
+  className?: string;
+  children: React.ReactNode;
+}
+
+const Label = ({ className, children, ...props }: LabelProps) => (
   <span className={`text-sm font-medium ${className || ""}`} {...props}>
     {children}
   </span>
