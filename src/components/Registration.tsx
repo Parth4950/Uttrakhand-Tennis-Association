@@ -97,11 +97,12 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       };
       console.log("[DEBUG] Sending player payload", playerPayload);
 
-      // If editing, update player, else create
       let response;
       if (editMode && playerId) {
+        // Use PUT for update
         response = await apiService.updatePlayer(playerId, playerPayload);
       } else {
+        // Use POST for create
         response = await apiService.createPlayer(playerPayload);
       }
       setPlayerData(data);
