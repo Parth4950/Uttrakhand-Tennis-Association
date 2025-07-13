@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AdminDashboard from "./AdminDashboard";
 import { apiService } from "@/services/api";
@@ -18,11 +18,20 @@ const AdminLogin = ({ onBack }: AdminLoginProps) => {
   const [password, setPassword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!username.trim() || !password.trim()) {
+      setLoginError("Please enter both username and password");
+      return;
+    }
+
     setIsLoading(true);
+    setLoginError(null);
     
     try {
       console.log('AdminLogin: Starting login process...');
@@ -42,9 +51,11 @@ const AdminLogin = ({ onBack }: AdminLoginProps) => {
       }
     } catch (error) {
       console.error('AdminLogin: Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Invalid username or password.";
+      setLoginError(errorMessage);
       toast({
         title: "Login Failed",
-        description: error instanceof Error ? error.message : "Invalid username or password.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -56,18 +67,53 @@ const AdminLogin = ({ onBack }: AdminLoginProps) => {
     console.log('AdminLogin: Handling logout');
     apiService.logout();
     setIsLoggedIn(false);
+    setUsername("");
+    setPassword("");
+    setLoginError(null);
   };
 
   useEffect(() => {
     console.log('AdminLogin: Component mounted, checking existing auth...');
-    const hasToken = apiService.isAuthenticated();
-    console.log('AdminLogin: Has existing token:', hasToken);
+    const checkAuth = async () => {
+      try {
+        setIsCheckingAuth(true);
+        const hasToken = apiService.isAuthenticated();
+        console.log('AdminLogin: Has existing token:', hasToken);
+        
+        if (hasToken) {
+          // Test if the token is still valid
+          const isValid = await apiService.testAuth();
+          if (isValid) {
+            console.log('AdminLogin: Found valid existing token, setting logged in state');
+            setIsLoggedIn(true);
+          } else {
+            console.log('AdminLogin: Token is invalid, clearing it');
+            apiService.logout();
+          }
+        }
+      } catch (error) {
+        console.error('AdminLogin: Error checking authentication:', error);
+        apiService.logout();
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
     
-    if (hasToken) {
-      console.log('AdminLogin: Found existing token, setting logged in state');
-      setIsLoggedIn(true);
-    }
+    checkAuth();
   }, []);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="p-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Checking authentication...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoggedIn) {
     console.log('AdminLogin: Rendering AdminDashboard');
@@ -85,6 +131,7 @@ const AdminLogin = ({ onBack }: AdminLoginProps) => {
               size="sm"
               onClick={onBack}
               className="text-white hover:bg-white/20"
+              disabled={isLoading}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -96,15 +143,28 @@ const AdminLogin = ({ onBack }: AdminLoginProps) => {
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleLogin} className="space-y-4">
+            {loginError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <p className="text-red-600 text-sm">{loginError}</p>
+                </div>
+              </div>
+            )}
+            
             <div>
               <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (loginError) setLoginError(null);
+                }}
                 required
                 className="mt-1"
                 disabled={isLoading}
+                autoComplete="username"
               />
             </div>
             
@@ -114,17 +174,21 @@ const AdminLogin = ({ onBack }: AdminLoginProps) => {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (loginError) setLoginError(null);
+                }}
                 required
                 className="mt-1"
                 disabled={isLoading}
+                autoComplete="current-password"
               />
             </div>
             
             <Button 
               type="submit" 
               className="w-full bg-green-600 hover:bg-green-700"
-              disabled={isLoading}
+              disabled={isLoading || !username.trim() || !password.trim()}
             >
               {isLoading ? "Logging in..." : "Login"}
             </Button>

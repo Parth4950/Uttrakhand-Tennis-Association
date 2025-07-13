@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Shield, Trophy, Save, LogOut, RefreshCw } from "lucide-react";
+import { ArrowLeft, Shield, Trophy, Save, LogOut, RefreshCw, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/api";
 
@@ -32,7 +32,9 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
   const [rankings, setRankings] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
+  const [savingRankings, setSavingRankings] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { toast } = useToast();
 
   const events = [
@@ -43,30 +45,8 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
     "Mixed Doubles"
   ];
 
-  useEffect(() => {
-    console.log('AdminDashboard mounted');
-    loadAllRegistrations();
-  }, []);
-
-  useEffect(() => {
-    if (selectedEvent) {
-      const filtered = registrations.filter(reg => reg.event_name === selectedEvent);
-      setFilteredRegistrations(filtered);
-      
-      // Load existing rankings for this event
-      const eventRankings: { [key: string]: string } = {};
-      filtered.forEach(reg => {
-        if (reg.ranking) {
-          eventRankings[`${reg.player_id}-${reg.event_name}`] = reg.ranking.toString();
-        }
-      });
-      setRankings(eventRankings);
-    } else {
-      setFilteredRegistrations([]);
-    }
-  }, [selectedEvent, registrations]);
-
-  const loadAllRegistrations = async () => {
+  // Memoized load function to prevent unnecessary re-renders
+  const loadAllRegistrations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -114,9 +94,52 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
     } finally {
       setLoading(false);
     }
+  }, [toast]);
+
+  useEffect(() => {
+    console.log('AdminDashboard mounted');
+    loadAllRegistrations();
+  }, [loadAllRegistrations]);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      const filtered = registrations.filter(reg => reg.event_name === selectedEvent);
+      setFilteredRegistrations(filtered);
+      
+      // Load existing rankings for this event
+      const eventRankings: { [key: string]: string } = {};
+      filtered.forEach(reg => {
+        if (reg.ranking) {
+          eventRankings[`${reg.player_id}-${reg.event_name}`] = reg.ranking.toString();
+        }
+      });
+      setRankings(eventRankings);
+      setHasUnsavedChanges(false);
+    } else {
+      setFilteredRegistrations([]);
+      setRankings({});
+      setHasUnsavedChanges(false);
+    }
+  }, [selectedEvent, registrations]);
+
+  // Validate ranking input
+  const validateRanking = (value: string): boolean => {
+    if (value === "") return true; // Allow empty values
+    const num = parseInt(value);
+    return !isNaN(num) && num > 0 && num <= 1000; // Reasonable range
   };
 
   function handleRankingChange(playerId: number, eventName: string, ranking: string) {
+    // Validate input
+    if (ranking !== "" && !validateRanking(ranking)) {
+      toast({
+        title: "Invalid Ranking",
+        description: "Please enter a valid number between 1 and 1000",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Find all events for this player that are visible in the UI (filteredRegistrations)
     const playerEvents = filteredRegistrations.filter(reg => reg.player_id === playerId);
     setRankings(prev => {
@@ -136,11 +159,20 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       });
       return updated;
     });
+    setHasUnsavedChanges(true);
   }
 
   async function saveRankings() {
+    if (!hasUnsavedChanges) {
+      toast({
+        title: "No Changes",
+        description: "No ranking changes to save.",
+      });
+      return;
+    }
+
     try {
-      setLoading(true);
+      setSavingRankings(true);
       // Only update rankings for player-event pairs that are visible in the UI (filteredRegistrations)
       const validKeys = filteredRegistrations.map(reg => `${reg.player_id}-${reg.event_name}`);
       const updates = Object.entries(rankings)
@@ -153,27 +185,46 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
             ranking: parseInt(ranking)
           };
         });
+
+      if (updates.length === 0) {
+        toast({
+          title: "No Rankings to Save",
+          description: "No valid rankings found to save.",
+        });
+        return;
+      }
+
+      // Process updates sequentially to avoid race conditions
       for (const update of updates) {
         await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
       }
+      
       toast({
         title: "Rankings Saved!",
-        description: `All rankings have been saved successfully.`,
+        description: `Successfully saved ${updates.length} ranking(s).`,
       });
+      setHasUnsavedChanges(false);
       await loadAllRegistrations();
     } catch (error) {
       console.error('Error saving rankings:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save rankings';
       toast({
         title: "Error",
-        description: "Failed to save rankings",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSavingRankings(false);
     }
   }
 
   function handleLogout() {
+    if (hasUnsavedChanges) {
+      if (!confirm("You have unsaved changes. Are you sure you want to logout?")) {
+        return;
+      }
+    }
+    
     console.log('Logout button clicked');
     apiService.logout();
     toast({
@@ -195,6 +246,7 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                   size="sm"
                   onClick={onBack}
                   className="text-white hover:bg-white/20"
+                  disabled={savingRankings}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
@@ -202,6 +254,12 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                 <div className="flex items-center space-x-2">
                   <Shield className="h-6 w-6" />
                   <CardTitle>Admin Dashboard</CardTitle>
+                  {hasUnsavedChanges && (
+                    <div className="flex items-center space-x-1 text-yellow-200">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-xs">Unsaved changes</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -210,6 +268,7 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                   size="sm"
                   onClick={handleLogout}
                   className="text-white hover:bg-white/20"
+                  disabled={savingRankings}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -218,6 +277,7 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                   variant="secondary"
                   size="sm"
                   onClick={onHome}
+                  disabled={savingRankings}
                 >
                   Home
                 </Button>
@@ -259,8 +319,11 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
               {error && (
                 <div className="text-center py-8">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-600 font-medium">Error Loading Data</p>
-                    <p className="text-red-500 text-sm mt-1">{error}</p>
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                      <p className="text-red-600 font-medium">Error Loading Data</p>
+                    </div>
+                    <p className="text-red-500 text-sm">{error}</p>
                     <div className="flex justify-center space-x-3 mt-3">
                       <Button 
                         onClick={loadAllRegistrations} 
@@ -283,10 +346,19 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                     <Button
                       onClick={saveRankings}
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={loading}
+                      disabled={loading || savingRankings || !hasUnsavedChanges}
                     >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Rankings
+                      {savingRankings ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Rankings
+                        </>
+                      )}
                     </Button>
                   </div>
                   
@@ -318,6 +390,8 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                                 onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
                                 className="w-20"
                                 min="1"
+                                max="1000"
+                                disabled={savingRankings}
                               />
                             </TableCell>
                           </TableRow>
