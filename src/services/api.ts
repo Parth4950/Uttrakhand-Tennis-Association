@@ -236,6 +236,7 @@ class ApiService {
 
   // Players methods
   async createPlayer(playerData: any) {
+    console.log('[DEBUG] apiService.createPlayer POST', '/api/players', playerData);
     console.log("Sending player payload", playerData);
     
     // Validate required fields
@@ -343,6 +344,7 @@ class ApiService {
     if (!playerId || playerId <= 0) {
       throw new Error('Valid player ID is required');
     }
+    console.log('[DEBUG] apiService.updatePlayer PUT', `/api/players/${playerId}`, playerData);
     return this.request(`/api/players/${playerId}`, {
       method: 'PUT',
       body: JSON.stringify(playerData),
