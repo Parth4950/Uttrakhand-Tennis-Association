@@ -140,23 +140,11 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       return;
     }
 
-    // Find all events for this player that are visible in the UI (filteredRegistrations)
-    const playerEvents = filteredRegistrations.filter(reg => reg.player_id === playerId);
+    // Only update the specific event that was changed
     setRankings(prev => {
       const updated = { ...prev };
-      // The value before this change (for this event)
-      const prevValue = prev[`${playerId}-${eventName}`];
-      // If the admin is entering a ranking for the first time for this player, or if the other events are empty or match the previous value, fill all their visible events
-      playerEvents.forEach(ev => {
-        const key = `${playerId}-${ev.event_name}`;
-        if (
-          key === `${playerId}-${eventName}` ||
-          !prev[key] || prev[key] === prevValue || prev[key] === ""
-        ) {
-          updated[key] = ranking;
-        }
-        // If the admin has already edited a different value for this event, do not overwrite it
-      });
+      const key = `${playerId}-${eventName}`;
+      updated[key] = ranking;
       return updated;
     });
     setHasUnsavedChanges(true);
@@ -195,14 +183,42 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       }
 
       // Process updates sequentially to avoid race conditions
+      const successfulUpdates = [];
+      const failedUpdates = [];
+
       for (const update of updates) {
-        await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
+        try {
+          await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
+          successfulUpdates.push(update);
+        } catch (error) {
+          console.error(`Failed to update ranking for player ${update.player_id} in event ${update.event_name}:`, error);
+          failedUpdates.push({
+            ...update,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
       }
-      
-      toast({
-        title: "Rankings Saved!",
-        description: `Successfully saved ${updates.length} ranking(s).`,
-      });
+
+      // Show results
+      if (successfulUpdates.length > 0) {
+        toast({
+          title: "Rankings Partially Saved",
+          description: `Successfully saved ${successfulUpdates.length} ranking(s).${failedUpdates.length > 0 ? ` ${failedUpdates.length} failed.` : ''}`,
+        });
+      }
+
+      if (failedUpdates.length > 0) {
+        const errorMessage = failedUpdates.map(f => 
+          `Player ${f.player_id} in ${f.event_name}: ${f.error}`
+        ).join(', ');
+        
+        toast({
+          title: "Some Rankings Failed to Save",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+
       setHasUnsavedChanges(false);
       await loadAllRegistrations();
     } catch (error) {
@@ -362,6 +378,35 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                     </Button>
                   </div>
                   
+                  {/* Show summary of changes to be saved */}
+                  {hasUnsavedChanges && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="text-sm font-medium text-blue-800 mb-2">Changes to be saved:</h5>
+                      <div className="text-xs text-blue-700 space-y-1">
+                        {Object.entries(rankings)
+                          .filter(([key, ranking]) => {
+                            const [playerId, eventName] = key.split('-');
+                            return filteredRegistrations.some(reg => 
+                              reg.player_id === parseInt(playerId) && 
+                              reg.event_name === eventName
+                            ) && ranking !== "";
+                          })
+                          .map(([key, ranking]) => {
+                            const [playerId, eventName] = key.split('-');
+                            const player = filteredRegistrations.find(reg => 
+                              reg.player_id === parseInt(playerId) && 
+                              reg.event_name === eventName
+                            );
+                            return player ? (
+                              <div key={key}>
+                                • {player.player_name} in {eventName}: Ranking {ranking}
+                              </div>
+                            ) : null;
+                          })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
@@ -372,30 +417,43 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                           <TableHead>WhatsApp</TableHead>
                           <TableHead>City</TableHead>
                           <TableHead className="w-32">Ranking</TableHead>
+                          <TableHead className="w-48">All Events</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredRegistrations.map((registration, index) => (
-                          <TableRow key={`${registration.player_id}-${registration.event_name}`}>
-                            <TableCell>{index + 1}</TableCell>
-                            <TableCell className="font-medium">{registration.player_name}</TableCell>
-                            <TableCell>{registration.partner_name || 'No partner assigned'}</TableCell>
-                            <TableCell>{registration.whatsapp_number}</TableCell>
-                            <TableCell>{registration.city}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                placeholder="Rank"
-                                value={rankings[`${registration.player_id}-${registration.event_name}`] || ""}
-                                onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
-                                className="w-20"
-                                min="1"
-                                max="1000"
-                                disabled={savingRankings}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {filteredRegistrations.map((registration, index) => {
+                          // Get all events for this player
+                          const playerAllEvents = registrations.filter(reg => reg.player_id === registration.player_id);
+                          const allEventsInfo = playerAllEvents.map(reg => {
+                            const ranking = reg.ranking ? ` (Rank: ${reg.ranking})` : '';
+                            return `${reg.event_name}${ranking}`;
+                          }).join(', ');
+                          
+                          return (
+                            <TableRow key={`${registration.player_id}-${registration.event_name}`}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell className="font-medium">{registration.player_name}</TableCell>
+                              <TableCell>{registration.partner_name || 'No partner assigned'}</TableCell>
+                              <TableCell>{registration.whatsapp_number}</TableCell>
+                              <TableCell>{registration.city}</TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  placeholder="Rank"
+                                  value={rankings[`${registration.player_id}-${registration.event_name}`] || ""}
+                                  onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
+                                  className="w-20"
+                                  min="1"
+                                  max="1000"
+                                  disabled={savingRankings}
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-600 max-w-xs truncate" title={allEventsInfo}>
+                                {allEventsInfo}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
