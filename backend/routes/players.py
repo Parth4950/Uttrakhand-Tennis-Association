@@ -7,6 +7,7 @@ players_bp = Blueprint('players', __name__)
 @players_bp.route('', methods=['POST'])
 def create_or_update_player():
     data = request.get_json()   
+    print('[DEBUG] Received player update:', data)
     connection = None
     cursor = None
 
@@ -15,14 +16,14 @@ def create_or_update_player():
         cursor = connection.cursor()
 
         player_id = data.get('id')  # Only present if editing
-        whatsapp = data.get('whatsapp_number')
+        whatsapp = (data.get('whatsapp_number') or '').strip()
+        print(f'[DEBUG] Checking for duplicate WhatsApp: {whatsapp}, player_id: {player_id}')
 
         # Check for duplicate WhatsApp number (exclude current user if editing)
         if player_id:
             cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s AND id != %s", (whatsapp, player_id))
         else:
             cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s", (whatsapp,))
-        
         if cursor.fetchone():
             return jsonify({'error': 'WhatsApp number already registered'}), 400
 
@@ -50,7 +51,6 @@ def create_or_update_player():
             cursor.execute(query, values)
             connection.commit()
             return jsonify({'message': 'Player updated successfully', 'id': player_id})
-        
         else:
             # INSERT new player
             query = """

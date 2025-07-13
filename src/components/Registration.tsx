@@ -85,7 +85,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       const playerPayload = {
         id: playerId, // Use existing ID if editing
         name: data.name,
-        whatsapp_number: data.whatsapp,
+        whatsapp_number: data.whatsapp.trim(), // Trim whitespace
         date_of_birth: data.dateOfBirth,
         email: data.email,
         city: data.city,
@@ -95,7 +95,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
         stay_y_or_n: data.stayYorN,
         fee_paid: false
       };
-      console.log("Sending player payload", playerPayload);
+      console.log("[DEBUG] Sending player payload", playerPayload);
 
       // If editing, update player, else create
       let response;
@@ -119,6 +119,8 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           errorMessage = "A player with this WhatsApp number and date of birth is already registered. Please check your information or contact support if you believe this is an error.";
         } else if (error.message.includes('already registered with this WhatsApp number')) {
           errorMessage = "This WhatsApp number is already registered with a different date of birth. Please verify your information or use a different WhatsApp number.";
+        } else if (error.message.includes('WhatsApp number already registered')) {
+          errorMessage = "This WhatsApp number is already registered. If you are editing, please make sure you are not changing it to another player's number.";
         } else {
           errorMessage = error.message;
         }
