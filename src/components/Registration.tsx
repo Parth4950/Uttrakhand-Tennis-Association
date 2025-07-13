@@ -82,7 +82,6 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
   const handleStep1Complete = async (data: PlayerData) => {
     setIsLoading(true);
     try {
-      // Only send fields that exist in the database
       const playerPayload = {
         id: playerId, // Use existing ID if editing
         name: data.name,
@@ -101,21 +100,16 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       let response;
       if (editMode && playerId) {
         // Use PUT for update
-        console.log("[DEBUG] Updating existing player with ID:", playerId);
         response = await apiService.updatePlayer(playerId, playerPayload);
-        console.log("[DEBUG] Update response:", response);
       } else {
         // Use POST for create
-        console.log("[DEBUG] Creating new player");
         response = await apiService.createPlayer(playerPayload);
-        console.log("[DEBUG] Create response:", response);
       }
-      
       setPlayerData(data);
       setPlayerId(response.id || playerId);
       setCurrentStep(2);
       toast({
-        title: editMode ? "Player Information Updated" : "Player Information Saved",
+        title: "Player Information Saved",
         description: "Now select your events and partners.",
       });
     } catch (error) {
@@ -128,10 +122,6 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           errorMessage = "This WhatsApp number is already registered with a different date of birth. Please verify your information or use a different WhatsApp number.";
         } else if (error.message.includes('WhatsApp number already registered')) {
           errorMessage = "This WhatsApp number is already registered. If you are editing, please make sure you are not changing it to another player's number.";
-        } else if (error.message.includes('is required')) {
-          errorMessage = `Missing required field: ${error.message}`;
-        } else if (error.message.includes('Player not found')) {
-          errorMessage = "Player not found. Please try logging in again.";
         } else {
           errorMessage = error.message;
         }

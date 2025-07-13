@@ -79,7 +79,7 @@ const UserLogin = ({ onBack }: UserLoginProps) => {
       } else {
         toast({
           title: "Login Failed",
-          description: "Invalid credentials. Please check your WhatsApp number and date of birth.",
+          description: "Invalid WhatsApp number or date of birth. Please check your credentials.",
           variant: "destructive",
         });
       }
@@ -89,12 +89,10 @@ const UserLogin = ({ onBack }: UserLoginProps) => {
       let errorMessage = "Unable to connect to the server. Please try again.";
       
       if (error instanceof Error) {
-        if (error.message.includes('Invalid credentials')) {
-          errorMessage = "Invalid WhatsApp number or date of birth. Please check your credentials.";
-        } else if (error.message.includes('Server is temporarily unavailable')) {
-          errorMessage = "Server is temporarily unavailable. Please try again later.";
-        } else if (error.message.includes('Request timeout')) {
-          errorMessage = "Connection timeout. Please check your internet connection and try again.";
+        if (error.message.includes('WhatsApp number is already registered')) {
+          errorMessage = "This WhatsApp number is registered with a different date of birth. Please check your date of birth or contact support.";
+        } else if (error.message.includes('No registration found')) {
+          errorMessage = "No registration found with these credentials. Please register first or check your information.";
         } else {
           errorMessage = error.message;
         }

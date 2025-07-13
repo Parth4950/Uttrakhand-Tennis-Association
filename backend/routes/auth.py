@@ -40,59 +40,23 @@ def user_login():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        whatsapp = data.get('whatsapp', '').strip()
-        date_of_birth = data.get('date_of_birth', '').strip()
+        whatsapp = data.get('whatsapp')
+        date_of_birth = data.get('date_of_birth')
         
         if not whatsapp or not date_of_birth:
             return jsonify({'error': 'WhatsApp number and date of birth are required'}), 400
         
-        # Normalize WhatsApp number (remove spaces and ensure +91 prefix)
-        whatsapp = whatsapp.replace(' ', '')
-        if whatsapp.startswith('91') and len(whatsapp) == 12:
-            whatsapp = '+' + whatsapp
-        elif whatsapp.startswith('6') and len(whatsapp) == 10:
-            whatsapp = '+91' + whatsapp
-        
-        print(f"[DEBUG] Login attempt - WhatsApp: {whatsapp}, DOB: {date_of_birth}")
-        
         connection = get_db_connection()
-        if not connection:
-            print("[ERROR] Database connection failed")
-            return jsonify({'error': 'Database connection failed. Please try again later.'}), 500
-            
         cursor = connection.cursor()
-        
-        # First, try exact match
         cursor.execute(
             "SELECT * FROM tbl_players WHERE whatsapp_number = %s AND date_of_birth = %s", 
             (whatsapp, date_of_birth)
         )
         result = cursor.fetchone()
         
-        if not result:
-            # Try without +91 prefix
-            if whatsapp.startswith('+91'):
-                whatsapp_alt = whatsapp[3:]
-                cursor.execute(
-                    "SELECT * FROM tbl_players WHERE whatsapp_number = %s AND date_of_birth = %s", 
-                    (whatsapp_alt, date_of_birth)
-                )
-                result = cursor.fetchone()
-        
-        if not result:
-            # Try with +91 prefix
-            if not whatsapp.startswith('+91') and len(whatsapp) == 10:
-                whatsapp_alt = '+91' + whatsapp
-                cursor.execute(
-                    "SELECT * FROM tbl_players WHERE whatsapp_number = %s AND date_of_birth = %s", 
-                    (whatsapp_alt, date_of_birth)
-                )
-                result = cursor.fetchone()
-        
         if result:
             columns = [desc[0] for desc in cursor.description]
             user = dict(zip(columns, result))
-            print(f"[DEBUG] User found: {user['name']} (ID: {user['id']})")
 
             cursor.close()
             cursor = connection.cursor()
@@ -113,8 +77,6 @@ def user_login():
             columns = [desc[0] for desc in cursor.description]
             events = [dict(zip(columns, row)) for row in events_result]
 
-            print(f"[DEBUG] Found {len(events)} events for user")
-
             return jsonify({
                 'success': True,
                 'user': {
@@ -123,12 +85,10 @@ def user_login():
                 }
             })
         else:
-            print(f"[DEBUG] No user found for WhatsApp: {whatsapp}, DOB: {date_of_birth}")
             return jsonify({'error': 'Invalid WhatsApp number or date of birth'}), 401
             
     except Exception as e:
-        print(f"[ERROR] Login error: {e}")
-        return jsonify({'error': 'Internal server error. Please try again later.'}), 500
+        return jsonify({'error': str(e)}), 500
     finally:
         if cursor:
             cursor.close()

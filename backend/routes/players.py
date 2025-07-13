@@ -185,41 +185,15 @@ def update_player(player_id):
     print('[DEBUG] PUT update_player:', data)
     connection = None
     cursor = None
-    
     try:
-        # Validate required fields
-        required_fields = ['name', 'whatsapp_number', 'date_of_birth', 'email', 'city']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'error': f'{field.replace("_", " ").title()} is required'}), 400
-        
         connection = get_db_connection()
-        if not connection:
-            print("[ERROR] Database connection failed")
-            return jsonify({'error': 'Database connection failed. Please try again later.'}), 500
-            
         cursor = connection.cursor()
-        
-        # Check if player exists
-        cursor.execute("SELECT id FROM tbl_players WHERE id = %s", (player_id,))
-        if not cursor.fetchone():
-            return jsonify({'error': 'Player not found'}), 404
-        
         whatsapp = (data.get('whatsapp_number') or '').strip()
         print(f'[DEBUG] PUT Checking for duplicate WhatsApp: {whatsapp}, player_id: {player_id}')
-        
-        # Normalize WhatsApp number (remove spaces and ensure +91 prefix)
-        whatsapp = whatsapp.replace(' ', '')
-        if whatsapp.startswith('91') and len(whatsapp) == 12:
-            whatsapp = '+' + whatsapp
-        elif whatsapp.startswith('6') and len(whatsapp) == 10:
-            whatsapp = '+91' + whatsapp
-        
         # Check for duplicate WhatsApp number (exclude current user)
         cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s AND id != %s", (whatsapp, player_id))
         if cursor.fetchone():
             return jsonify({'error': 'WhatsApp number already registered'}), 400
-        
         # UPDATE existing player
         query = """
             UPDATE tbl_players SET
@@ -240,18 +214,11 @@ def update_player(player_id):
             data.get('fee_paid', False),
             player_id
         )
-        
         cursor.execute(query, values)
         connection.commit()
-        
-        print(f"[DEBUG] Player {player_id} updated successfully")
         return jsonify({'message': 'Player updated successfully', 'id': player_id})
-        
     except Exception as e:
-        print(f"[ERROR] Update player error: {e}")
-        return jsonify({'error': 'Internal server error. Please try again later.'}), 500
+        return jsonify({'error': str(e)}), 500
     finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+        if cursor: cursor.close()
+        if connection: connection.close()
