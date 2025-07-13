@@ -178,3 +178,47 @@ def update_ranking():
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
+
+@players_bp.route('/<int:player_id>', methods=['PUT'])
+def update_player(player_id):
+    data = request.get_json()
+    print('[DEBUG] PUT update_player:', data)
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        whatsapp = (data.get('whatsapp_number') or '').strip()
+        print(f'[DEBUG] PUT Checking for duplicate WhatsApp: {whatsapp}, player_id: {player_id}')
+        # Check for duplicate WhatsApp number (exclude current user)
+        cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s AND id != %s", (whatsapp, player_id))
+        if cursor.fetchone():
+            return jsonify({'error': 'WhatsApp number already registered'}), 400
+        # UPDATE existing player
+        query = """
+            UPDATE tbl_players SET
+                name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
+                shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s
+            WHERE id = %s
+        """
+        values = (
+            data.get('name'),
+            whatsapp,
+            data.get('date_of_birth'),
+            data.get('email'),
+            data.get('city'),
+            data.get('shirt_size'),
+            data.get('short_size'),
+            data.get('food_pref'),
+            data.get('stay_y_or_n', False),
+            data.get('fee_paid', False),
+            player_id
+        )
+        cursor.execute(query, values)
+        connection.commit()
+        return jsonify({'message': 'Player updated successfully', 'id': player_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cursor: cursor.close()
+        if connection: connection.close()
