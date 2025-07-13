@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Shield, Trophy, Save, LogOut, RefreshCw, AlertCircle } from "lucide-react";
+import { ArrowLeft, Shield, Trophy, Save, LogOut, RefreshCw, AlertCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/api";
 
@@ -148,6 +148,35 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       return updated;
     });
     setHasUnsavedChanges(true);
+  }
+
+  function handleCopyRankingToAllEvents(playerId: number, eventName: string) {
+    // Get the ranking for the current event
+    const key = `${playerId}-${eventName}`;
+    const ranking = rankings[key];
+    if (!ranking) {
+      toast({
+        title: "No Ranking Entered",
+        description: "Please enter a ranking to copy.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Copy this ranking to all events for this player in the filtered list
+    setRankings(prev => {
+      const updated = { ...prev };
+      filteredRegistrations.forEach(reg => {
+        if (reg.player_id === playerId) {
+          updated[`${playerId}-${reg.event_name}`] = ranking;
+        }
+      });
+      return updated;
+    });
+    setHasUnsavedChanges(true);
+    toast({
+      title: "Ranking Copied",
+      description: "Ranking copied to all events for this player.",
+    });
   }
 
   async function saveRankings() {
@@ -428,7 +457,7 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                             const ranking = reg.ranking ? ` (Rank: ${reg.ranking})` : '';
                             return `${reg.event_name}${ranking}`;
                           }).join(', ');
-                          
+                          const playerHasMultipleEvents = playerAllEvents.length > 1;
                           return (
                             <TableRow key={`${registration.player_id}-${registration.event_name}`}>
                               <TableCell>{index + 1}</TableCell>
@@ -437,16 +466,30 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                               <TableCell>{registration.whatsapp_number}</TableCell>
                               <TableCell>{registration.city}</TableCell>
                               <TableCell>
-                                <Input
-                                  type="number"
-                                  placeholder="Rank"
-                                  value={rankings[`${registration.player_id}-${registration.event_name}`] || ""}
-                                  onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
-                                  className="w-20"
-                                  min="1"
-                                  max="1000"
-                                  disabled={savingRankings}
-                                />
+                                <div className="flex items-center space-x-2">
+                                  <Input
+                                    type="number"
+                                    placeholder="Rank"
+                                    value={rankings[`${registration.player_id}-${registration.event_name}`] || ""}
+                                    onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
+                                    className="w-20"
+                                    min="1"
+                                    max="1000"
+                                    disabled={savingRankings}
+                                  />
+                                  {playerHasMultipleEvents && (
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="outline"
+                                      title="Copy this ranking to all events for this player"
+                                      onClick={() => handleCopyRankingToAllEvents(registration.player_id, registration.event_name)}
+                                      disabled={savingRankings}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="text-xs text-gray-600 max-w-xs truncate" title={allEventsInfo}>
                                 {allEventsInfo}
