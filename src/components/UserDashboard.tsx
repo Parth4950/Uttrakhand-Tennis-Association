@@ -30,6 +30,7 @@ interface DbPlayer {
   food_pref: string;
   stay_y_or_n: boolean;
   created_at?: string;
+  fee_paid?: boolean; // Added fee_paid field
   // ... any other fields
 }
 
@@ -173,6 +174,14 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
                   <div>
                     <Label className="font-medium">Food Preference:</Label>
                     <p className="text-gray-700">{player.food_pref || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Fee Paid:</Label>
+                    {player.fee_paid ? (
+                      <Badge className="bg-green-500 text-white">Paid</Badge>
+                    ) : (
+                      <Badge className="bg-red-500 text-white">Not Paid</Badge>
+                    )}
                   </div>
                   <div>
                     <Label className="font-medium">Registration Date:</Label>

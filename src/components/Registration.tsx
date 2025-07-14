@@ -7,11 +7,6 @@ import RegistrationStep2 from "./RegistrationStep2";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "../services/api";
 
-interface RegistrationProps {
-  onBack: () => void;
-  initialData?: PlayerData;
-}
-
 export interface PlayerData {
   id?: number;
   name: string;
@@ -28,6 +23,50 @@ export interface PlayerData {
   foodPref: string;
   stayYorN: boolean;
   feePaid?: boolean;
+}
+
+interface DbPlayer {
+  id: number;
+  name: string;
+  whatsapp_number: string;
+  date_of_birth: string;
+  email: string;
+  address: string;
+  emergency_contact: string;
+  playing_experience: string;
+  medical_conditions: string;
+  city: string;
+  shirt_size: string;
+  short_size: string;
+  food_pref: string;
+  stay_yor_n: boolean;
+  fee_paid?: boolean;
+  created_at?: string;
+}
+
+function mapUserToPlayerData(user: DbPlayer): PlayerData {
+  return {
+    id: user.id,
+    name: user.name,
+    whatsapp: user.whatsapp_number,
+    dateOfBirth: user.date_of_birth,
+    email: user.email,
+    address: user.address,
+    emergencyContact: user.emergency_contact,
+    playingExperience: user.playing_experience,
+    medicalConditions: user.medical_conditions,
+    city: user.city,
+    shirtSize: user.shirt_size,
+    shortSize: user.short_size,
+    foodPref: user.food_pref,
+    stayYorN: user.stay_yor_n,
+    feePaid: user.fee_paid ?? false,
+  };
+}
+
+interface RegistrationProps {
+  onBack: () => void;
+  initialData?: PlayerData;
 }
 
 export interface EventSelection {
