@@ -32,7 +32,8 @@ def create_or_update_player():
             query = """
                 UPDATE tbl_players SET
                     name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
-                    shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s
+                    shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s,
+                    address = %s, emergency_contact = %s, playing_experience = %s, medical_conditions = %s
                 WHERE id = %s
             """
             values = (
@@ -46,6 +47,10 @@ def create_or_update_player():
                 data.get('food_pref'),
                 data.get('stay_y_or_n', False),
                 data.get('fee_paid', False),
+                data.get('address'),
+                data.get('emergency_contact'),
+                data.get('playing_experience'),
+                data.get('medical_conditions'),
                 player_id
             )
             cursor.execute(query, values)
@@ -56,9 +61,10 @@ def create_or_update_player():
             query = """
                 INSERT INTO tbl_players (
                     name, whatsapp_number, date_of_birth, email, city, 
-                    shirt_size, short_size, food_pref, stay_y_or_n, fee_paid
+                    shirt_size, short_size, food_pref, stay_y_or_n, fee_paid,
+                    address, emergency_contact, playing_experience, medical_conditions
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 data.get('name'),
@@ -70,7 +76,11 @@ def create_or_update_player():
                 data.get('short_size'),
                 data.get('food_pref'),
                 data.get('stay_y_or_n', False),
-                data.get('fee_paid', False)
+                data.get('fee_paid', False),
+                data.get('address'),
+                data.get('emergency_contact'),
+                data.get('playing_experience'),
+                data.get('medical_conditions')
             )
             cursor.execute(query, values)
             connection.commit()

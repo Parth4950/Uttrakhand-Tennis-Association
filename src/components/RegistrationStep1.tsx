@@ -14,12 +14,15 @@ interface RegistrationStep1Props {
 }
 
 const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1Props) => {
-  const [formData, setFormData] = useState<PlayerData>(initialData);
- useEffect(() => {
+  const [formData, setFormData] = useState<PlayerData>({
+    ...initialData,
+    feePaid: initialData.feePaid ?? false,
+  });
+  useEffect(() => {
     if (initialData.id) {
-     setFormData(prev => ({ ...prev, id: initialData.id }));
-  }
-}, [initialData]);
+      setFormData(prev => ({ ...prev, id: initialData.id, feePaid: initialData.feePaid ?? false }));
+    }
+  }, [initialData]);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -289,6 +292,16 @@ const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1
             disabled={isLoading}
           />
           <Label htmlFor="stayYorN">I need accommodation during the tournament</Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="feePaid"
+            checked={formData.feePaid}
+            onCheckedChange={(checked) => handleInputChange("feePaid", checked as boolean)}
+            disabled={isLoading}
+          />
+          <Label htmlFor="feePaid">Fee Paid</Label>
         </div>
       </div>
       

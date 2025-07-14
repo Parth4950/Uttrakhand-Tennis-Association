@@ -27,6 +27,7 @@ export interface PlayerData {
   shortSize: string;
   foodPref: string;
   stayYorN: boolean;
+  feePaid?: boolean;
 }
 
 export interface EventSelection {
@@ -57,6 +58,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       shortSize: "",
       foodPref: "",
       stayYorN: false,
+      feePaid: false,
     }
   );
   // Pre-fill eventData if initialData has event info
@@ -93,7 +95,11 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
         short_size: data.shortSize,
         food_pref: data.foodPref,
         stay_y_or_n: data.stayYorN,
-        fee_paid: false
+        fee_paid: data.feePaid ?? false,
+        address: data.address,
+        emergency_contact: data.emergencyContact,
+        playing_experience: data.playingExperience,
+        medical_conditions: data.medicalConditions
       };
       console.log("[DEBUG] Sending player payload", playerPayload);
 
