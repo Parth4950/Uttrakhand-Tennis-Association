@@ -29,6 +29,10 @@ def create_or_update_player():
 
         if player_id:
             # UPDATE existing player
+            print('[DEBUG] About to update player:')
+            print('  address:', data.get('address'))
+            print('  emergency_contact:', data.get('emergency_contact'))
+            print('  playing_experience:', data.get('playing_experience'))
             query = """
                 UPDATE tbl_players SET
                     name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
@@ -58,6 +62,10 @@ def create_or_update_player():
             return jsonify({'message': 'Player updated successfully', 'id': player_id})
         else:
             # INSERT new player
+            print('[DEBUG] About to insert player:')
+            print('  address:', data.get('address'))
+            print('  emergency_contact:', data.get('emergency_contact'))
+            print('  playing_experience:', data.get('playing_experience'))
             query = """
                 INSERT INTO tbl_players (
                     name, whatsapp_number, date_of_birth, email, city, 
