@@ -124,6 +124,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
   const handleStep1Complete = async (data: PlayerData) => {
     setIsLoading(true);
     try {
+      console.log('[DEBUG] handleStep1Complete received:', data); // Debug log
       const playerPayload = {
         id: playerId, // Use existing ID if editing
         name: data.name,

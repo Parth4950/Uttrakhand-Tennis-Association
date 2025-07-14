@@ -58,20 +58,45 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
   // Fetch available partners for event 1
   useEffect(() => {
     if (formData.event1 && playerId) {
-      fetchPartnersForEvent(formData.event1, setPartnersForEvent1);
+      fetchPartnersForEvent(formData.event1, (partners) => {
+        // If editing and a partner is set, ensure they are in the list
+        if (initialData.partner1 && initialData.partner1 !== "not-registered" && !partners.some(p => String(p.user_id) === initialData.partner1)) {
+          partners = [
+            ...partners,
+            {
+              user_id: parseInt(initialData.partner1),
+              player_name: "(Current Partner)",
+              has_partner: false
+            }
+          ];
+        }
+        setPartnersForEvent1(partners);
+      });
     } else {
       setPartnersForEvent1([]);
     }
-  }, [formData.event1, playerId, fetchPartnersForEvent]);
+  }, [formData.event1, playerId, fetchPartnersForEvent, initialData.partner1]);
 
   // Fetch available partners for event 2
   useEffect(() => {
     if (formData.event2 && playerId) {
-      fetchPartnersForEvent(formData.event2, setPartnersForEvent2);
+      fetchPartnersForEvent(formData.event2, (partners) => {
+        if (initialData.partner2 && initialData.partner2 !== "not-registered" && !partners.some(p => String(p.user_id) === initialData.partner2)) {
+          partners = [
+            ...partners,
+            {
+              user_id: parseInt(initialData.partner2),
+              player_name: "(Current Partner)",
+              has_partner: false
+            }
+          ];
+        }
+        setPartnersForEvent2(partners);
+      });
     } else {
       setPartnersForEvent2([]);
     }
-  }, [formData.event2, playerId, fetchPartnersForEvent]);
+  }, [formData.event2, playerId, fetchPartnersForEvent, initialData.partner2]);
 
   const handleInputChange = (field: keyof EventSelection, value: string) => {
     const actualValue = value === "no-event" ? "" : value;
