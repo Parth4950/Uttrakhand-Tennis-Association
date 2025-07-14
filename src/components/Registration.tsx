@@ -23,6 +23,7 @@ export interface PlayerData {
   foodPref: string;
   stayYorN: boolean;
   feePaid?: boolean;
+  events?: { event_name: string; partner_id?: number }[];
 }
 
 interface DbPlayer {

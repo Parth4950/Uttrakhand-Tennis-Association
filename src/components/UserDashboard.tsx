@@ -99,8 +99,8 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
   };
 
   if (isEditing) {
-    // For editing, map to PlayerData (camelCase)
-    return <Registration initialData={mapUserToPlayerData(player)} onBack={handleEditComplete} />;
+    // For editing, map to PlayerData (camelCase) and include events for prefill
+    return <Registration initialData={{ ...mapUserToPlayerData(player), events }} onBack={handleEditComplete} />;
   }
 
   return (
