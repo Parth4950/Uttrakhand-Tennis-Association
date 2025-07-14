@@ -164,6 +164,18 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
                     <p className="text-gray-700">{player.city || 'Not provided'}</p>
                   </div>
                   <div>
+                    <Label className="font-medium">Address:</Label>
+                    <p className="text-gray-700">{player.address || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Emergency Contact:</Label>
+                    <p className="text-gray-700">{player.emergency_contact || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Playing Experience:</Label>
+                    <p className="text-gray-700">{player.playing_experience || 'Not provided'}</p>
+                  </div>
+                  <div>
                     <Label className="font-medium">Shirt Size:</Label>
                     <p className="text-gray-700">{player.shirt_size || 'Not provided'}</p>
                   </div>
