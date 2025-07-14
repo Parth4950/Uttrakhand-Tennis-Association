@@ -5,29 +5,73 @@ import { ArrowLeft, Edit, User, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Registration from "./Registration";
 import { PlayerData } from "./Registration";
+import React from "react";
+
+interface EventData {
+  event_name: string;
+  partner_id?: number;
+  partner_name?: string;
+  ranking?: number;
+}
+
+interface DbPlayer {
+  id: number;
+  name: string;
+  whatsapp_number: string;
+  date_of_birth: string;
+  email: string;
+  address: string;
+  emergency_contact: string;
+  playing_experience: string;
+  medical_conditions: string;
+  city: string;
+  shirt_size: string;
+  short_size: string;
+  food_pref: string;
+  stay_y_or_n: boolean;
+  created_at?: string;
+  // ... any other fields
+}
 
 interface UserDashboardProps {
-  user: any;
+  user: {
+    player: DbPlayer;
+    events: EventData[];
+  } | (DbPlayer & { events?: EventData[] });
   onBack: () => void;
   onHome: () => void;
 }
 
-function mapUserToPlayerData(user: any): PlayerData {
+function mapUserToPlayerData(user: unknown): PlayerData {
+  // At this point, user is always a DbPlayer
+  const dbUser = user as DbPlayer;
   return {
-    name: user.name || "",
-    whatsapp: user.whatsapp_number || user.whatsapp || "",
-    dateOfBirth: user.date_of_birth || user.dateOfBirth || "",
-    email: user.email || "",
-    address: user.address || "",
-    emergencyContact: user.emergency_contact || user.emergencyContact || "",
-    playingExperience: user.playing_experience || user.playingExperience || "",
-    medicalConditions: user.medical_conditions || user.medicalConditions || "",
-    city: user.city || "",
-    shirtSize: user.shirt_size || user.shirtSize || "",
-    shortSize: user.short_size || user.shortSize || "",
-    foodPref: user.food_pref || user.foodPref || "",
-    stayYorN: user.stay_y_or_n ?? user.stayYorN ?? false,
+    id: dbUser.id,
+    name: dbUser.name,
+    whatsapp: dbUser.whatsapp_number,
+    dateOfBirth: dbUser.date_of_birth,
+    email: dbUser.email,
+    address: dbUser.address,
+    emergencyContact: dbUser.emergency_contact,
+    playingExperience: dbUser.playing_experience,
+    medicalConditions: dbUser.medical_conditions,
+    city: dbUser.city,
+    shirtSize: dbUser.shirt_size,
+    shortSize: dbUser.short_size,
+    foodPref: dbUser.food_pref,
+    stayYorN: dbUser.stay_y_or_n,
   };
+}
+
+// Type guard to check if user has a player property
+function hasPlayerProp(user: unknown): user is { player: DbPlayer; events: EventData[] } {
+  return (
+    typeof user === 'object' &&
+    user !== null &&
+    'player' in user &&
+    typeof (user as { player?: unknown }).player === 'object' &&
+    (user as { player?: unknown }).player !== undefined
+  );
 }
 
 const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
@@ -38,14 +82,9 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
     // Refresh user data could be implemented here
   };
 
-  if (isEditing) {
-    const player = user.player || user;
-    return <Registration initialData={mapUserToPlayerData(player)} onBack={handleEditComplete} />;
-  }
-
-  // Extract player data from the user object
-  const player = user.player || user;
-  const events = user.events || [];
+  // Always use the DB player object for display
+  const player: DbPlayer = hasPlayerProp(user) ? user.player : user;
+  const events: EventData[] = hasPlayerProp(user) ? user.events : user.events || [];
 
   // Format date without time
   const formatDateOnly = (dateString: string) => {
@@ -57,6 +96,11 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
       year: 'numeric'
     });
   };
+
+  if (isEditing) {
+    // For editing, map to PlayerData (camelCase)
+    return <Registration initialData={mapUserToPlayerData(player)} onBack={handleEditComplete} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
@@ -147,7 +191,7 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
                 </h3>
                 <div className="space-y-4">
                   {events.length > 0 ? (
-                    events.map((event: any, index: number) => (
+                    events.map((event: EventData, index: number) => (
                       <Card key={index} className={`${index % 2 === 0 ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
                         <CardHeader className="pb-2">
                           <CardTitle className={`text-lg ${index % 2 === 0 ? 'text-green-800' : 'text-blue-800'}`}>
@@ -185,7 +229,7 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
   );
 };
 
-const Label = ({ className, children, ...props }: any) => (
+const Label = ({ className, children, ...props }: React.PropsWithChildren<{ className?: string }>) => (
   <span className={`text-sm font-medium ${className || ""}`} {...props}>
     {children}
   </span>
