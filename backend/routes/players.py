@@ -216,7 +216,8 @@ def update_player(player_id):
         query = """
             UPDATE tbl_players SET
                 name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
-                shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s
+                shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s,
+                address = %s, emergency_contact = %s, playing_experience = %s, medical_conditions = %s
             WHERE id = %s
         """
         values = (
@@ -230,6 +231,10 @@ def update_player(player_id):
             data.get('food_pref'),
             data.get('stay_y_or_n', False),
             data.get('fee_paid', False),
+            data.get('address'),
+            data.get('emergency_contact'),
+            data.get('playing_experience'),
+            data.get('medical_conditions'),
             player_id
         )
         cursor.execute(query, values)
