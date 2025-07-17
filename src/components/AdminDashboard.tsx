@@ -477,16 +477,18 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                                     max="1000"
                                     disabled={savingRankings}
                                   />
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="outline"
-                                    title="Copy this ranking to all events for this player"
-                                    onClick={() => handleCopyRankingToAllEvents(registration.player_id, registration.event_name)}
-                                    disabled={savingRankings}
-                                  >
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
+                                  {playerHasMultipleEvents && (
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="outline"
+                                      title="Copy this ranking to all events for this player"
+                                      onClick={() => handleCopyRankingToAllEvents(registration.player_id, registration.event_name)}
+                                      disabled={savingRankings}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell className="text-xs text-gray-600 max-w-xs truncate" title={allEventsInfo}>

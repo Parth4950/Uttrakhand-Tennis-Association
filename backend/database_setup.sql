@@ -39,8 +39,6 @@ CREATE TABLE tbl_partners (
     FOREIGN KEY (partner_id) REFERENCES tbl_players(id) ON DELETE SET NULL
 );
 
-ALTER TABLE tbl_partners
-  ADD CONSTRAINT unique_event_ranking UNIQUE (event_name, ranking);
 
 -- Create indexes for better performance
 CREATE INDEX idx_partners_event_user ON tbl_partners(event_name, user_id);
