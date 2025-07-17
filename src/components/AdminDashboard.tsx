@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Shield, Trophy, Save, LogOut, RefreshCw, AlertCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/api";
-import jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 // Add type for JWT payload
 interface JwtPayload {
@@ -114,7 +114,7 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
     const token = localStorage.getItem('access_token');
     if (token) {
       try {
-        const decoded = jwt_decode<JwtPayload>(token);
+        const decoded = jwtDecode<JwtPayload>(token);
         if (decoded && decoded.sub === 'admin') {
           setIsAdmin(true);
         } else {
