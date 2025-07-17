@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
-from db import get_db_connection  # ✅ update this to match your folder structure
+from db import get_db_connection  
 
 auth_bp = Blueprint('auth', __name__)
 

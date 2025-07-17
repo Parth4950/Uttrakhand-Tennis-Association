@@ -142,13 +142,11 @@ def update_ranking():
 
         cursor = connection.cursor()
         
-        # First check if the player exists
         cursor.execute("SELECT id, name FROM tbl_players WHERE id = %s", (player_id,))
         player = cursor.fetchone()
         if not player:
             return jsonify({'error': f'Player with ID {player_id} not found'}), 404
         
-        # Check if the event exists
         cursor.execute("SELECT event_name FROM tbl_eventname WHERE event_name = %s", (event_name,))
         event = cursor.fetchone()
         if not event:

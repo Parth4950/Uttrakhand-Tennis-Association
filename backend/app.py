@@ -50,9 +50,9 @@ try:
     app.register_blueprint(partners_bp, url_prefix='/api/partners')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
-    print("✅ All blueprints registered successfully")
+    print("All blueprints registered successfully")
 except ImportError as e:
-    print(f"❌ Error importing blueprints: {e}")
+    print(f"Error importing blueprints: {e}")
 
 #Health check
 @app.route('/api/health', methods=['GET'])
@@ -80,7 +80,7 @@ def root():
 
 #Local dev
 if __name__ == '__main__':
-    print("🚀 Starting Flask server...")
+    print("Starting Flask server...")
     for rule in app.url_map.iter_rules():
         print(f"  {rule.endpoint}: {rule.rule} [{', '.join(rule.methods)}]")
     app.run(debug=True, host='0.0.0.0', port=5000)

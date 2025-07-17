@@ -80,7 +80,7 @@ def check_registrations():
             print("No players found with multiple events")
             
     except Exception as e:
-        print(f"❌ Error checking registrations: {e}")
+        print(f"Error checking registrations: {e}")
     finally:
         if cursor:
             cursor.close()
@@ -95,7 +95,7 @@ def check_specific_player(player_id):
     try:
         connection = get_db_connection()
         if not connection:
-            print("❌ Database connection failed")
+            print("Database connection failed")
             return
         
         cursor = connection.cursor()
@@ -104,7 +104,7 @@ def check_specific_player(player_id):
         cursor.execute("SELECT id, name, whatsapp_number FROM tbl_players WHERE id = %s", (player_id,))
         player = cursor.fetchone()
         if not player:
-            print(f"❌ Player with ID {player_id} not found")
+            print(f"Player with ID {player_id} not found")
             return
         
         print(f"🔍 Checking registrations for player {player[1]} (ID: {player[0]}):")
@@ -133,7 +133,7 @@ def check_specific_player(player_id):
             print("No registrations found for this player")
             
     except Exception as e:
-        print(f"❌ Error checking player registrations: {e}")
+        print(f"Error checking player registrations: {e}")
     finally:
         if cursor:
             cursor.close()
@@ -141,8 +141,6 @@ def check_specific_player(player_id):
             connection.close()
 
 if __name__ == "__main__":
-    print("🚀 Starting registration debug...")
+    print("Starting registration debug...")
     check_registrations()
     
-    # You can also check a specific player by uncommenting the line below
-    # check_specific_player(1)  # Replace 1 with the actual player ID 

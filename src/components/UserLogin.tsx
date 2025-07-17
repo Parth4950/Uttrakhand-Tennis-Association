@@ -14,7 +14,7 @@ interface UserLoginProps {
 }
 
 const UserLogin = ({ onBack }: UserLoginProps) => {
-  console.log("🚀 UserLogin component mounted");
+  console.log("UserLogin component mounted");
 
   const [whatsapp, setWhatsapp] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -67,7 +67,7 @@ const UserLogin = ({ onBack }: UserLoginProps) => {
     
     try {
       // Use the new user login endpoint
-      console.log("📞 Calling apiService.userLogin()"); 
+      console.log("Calling apiService.userLogin()"); 
       const response = await apiService.userLogin(whatsapp, dateOfBirth);
       
       if (response.success) {

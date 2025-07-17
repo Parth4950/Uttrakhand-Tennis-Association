@@ -9,7 +9,7 @@ BASE_URL = "http://localhost:5000"
 
 def test_ranking_updates():
     """Test ranking updates for players with multiple events"""
-    print("🔍 Testing ranking updates...")
+    print("Testing ranking updates...")
     
     # First login as admin
     login_data = {
@@ -20,7 +20,7 @@ def test_ranking_updates():
     try:
         response = requests.post(f"{BASE_URL}/api/auth/login", json=login_data)
         if response.status_code != 200:
-            print("❌ Login failed")
+            print("Login failed")
             return
         
         token = response.json()['access_token']
@@ -29,11 +29,11 @@ def test_ranking_updates():
         # Get all registrations
         response = requests.get(f"{BASE_URL}/api/admin/registrations", headers=headers)
         if response.status_code != 200:
-            print("❌ Failed to get registrations")
+            print("Failed to get registrations")
             return
         
         registrations = response.json()
-        print(f"✅ Got {len(registrations)} registrations")
+        print(f"Got {len(registrations)} registrations")
         
         # Find a player with multiple events
         player_events = {}
@@ -51,12 +51,12 @@ def test_ranking_updates():
                 break
         
         if not multi_event_player:
-            print("❌ No player found with multiple events")
+            print("No player found with multiple events")
             return
         
         player_id = multi_event_player['player_id']
         player_name = multi_event_player['player_name']
-        print(f"✅ Testing with player: {player_name} (ID: {player_id})")
+        print(f"Testing with player: {player_name} (ID: {player_id})")
         
         # Test updating rankings for each event
         for event in player_events[player_id]:
@@ -77,12 +77,12 @@ def test_ranking_updates():
             print(f"    Update status: {response.status_code}")
             
             if response.status_code == 200:
-                print(f"    ✅ Successfully updated ranking to {new_ranking}")
+                print(f"    Successfully updated ranking to {new_ranking}")
             else:
-                print(f"    ❌ Failed: {response.text}")
+                print(f"    Failed: {response.text}")
         
         # Verify the updates
-        print("\n🔍 Verifying updates...")
+        print("\n Verifying updates...")
         response = requests.get(f"{BASE_URL}/api/admin/registrations", headers=headers)
         if response.status_code == 200:
             updated_registrations = response.json()
@@ -91,7 +91,7 @@ def test_ranking_updates():
                     print(f"  {reg['event_name']}: Ranking {reg.get('ranking', 'None')}")
         
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        print(f"Test failed: {e}")
 
 if __name__ == "__main__":
     test_ranking_updates() 

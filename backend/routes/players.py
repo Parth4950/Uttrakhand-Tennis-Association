@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from db import get_db_connection  # Adjust path if needed
+from db import get_db_connection  
 
 players_bp = Blueprint('players', __name__)
 
@@ -19,7 +19,6 @@ def create_or_update_player():
         whatsapp = (data.get('whatsapp_number') or '').strip()
         print(f'[DEBUG] Checking for duplicate WhatsApp: {whatsapp}, player_id: {player_id}')
 
-        # Check for duplicate WhatsApp number (exclude current user if editing)
         if player_id:
             cursor.execute("SELECT id FROM tbl_players WHERE whatsapp_number = %s AND id != %s", (whatsapp, player_id))
         else:

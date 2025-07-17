@@ -84,7 +84,6 @@ def get_event_statistics():
             cursor.execute("SELECT * FROM event_statistics")
         except Exception as e:
             print(f"Event statistics view not found, creating dynamic query: {e}")
-            # Fallback to dynamic query if view doesn't exist
             query = """
             SELECT 
                 e.event_name,

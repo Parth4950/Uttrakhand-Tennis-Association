@@ -13,15 +13,15 @@ def test_database():
     """Test database connectivity"""
     print("🔍 Testing database connection...")
     if test_db_connection():
-        print("✅ Database connection successful")
+        print("Database connection successful")
         return True
     else:
-        print("❌ Database connection failed")
+        print("Database connection failed")
         return False
 
 def test_admin_login():
     """Test admin login functionality"""
-    print("\n🔍 Testing admin login...")
+    print("\nTesting admin login...")
     
     # Test with correct credentials
     login_data = {
@@ -36,25 +36,25 @@ def test_admin_login():
         if response.status_code == 200:
             data = response.json()
             if 'access_token' in data:
-                print("✅ Admin login successful")
+                print("Admin login successful")
                 return data['access_token']
             else:
-                print("❌ No access token in response")
+                print("No access token in response")
                 return None
         else:
-            print(f"❌ Login failed: {response.text}")
+            print(f"Login failed: {response.text}")
             return None
             
     except requests.exceptions.ConnectionError:
-        print("❌ Could not connect to server. Make sure the Flask app is running.")
+        print("Could not connect to server. Make sure the Flask app is running.")
         return None
     except Exception as e:
-        print(f"❌ Login test failed: {e}")
+        print(f"Login test failed: {e}")
         return None
 
 def test_admin_endpoints(token):
     """Test admin endpoints with authentication"""
-    print("\n🔍 Testing admin endpoints...")
+    print("\nTesting admin endpoints...")
     
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -65,12 +65,12 @@ def test_admin_endpoints(token):
         
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Registrations endpoint successful - {len(data)} registrations found")
+            print(f"Registrations endpoint successful - {len(data)} registrations found")
         else:
-            print(f"❌ Registrations endpoint failed: {response.text}")
+            print(f"Registrations endpoint failed: {response.text}")
             
     except Exception as e:
-        print(f"❌ Registrations test failed: {e}")
+        print(f"Registrations test failed: {e}")
     
     # Test statistics endpoint
     try:
@@ -79,16 +79,16 @@ def test_admin_endpoints(token):
         
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Statistics endpoint successful - {len(data)} events found")
+            print(f"Statistics endpoint successful - {len(data)} events found")
         else:
-            print(f"❌ Statistics endpoint failed: {response.text}")
+            print(f"Statistics endpoint failed: {response.text}")
             
     except Exception as e:
-        print(f"❌ Statistics test failed: {e}")
+        print(f"Statistics test failed: {e}")
 
 def test_ranking_update(token):
     """Test ranking update functionality"""
-    print("\n🔍 Testing ranking update...")
+    print("\nTesting ranking update...")
     
     headers = {"Authorization": f"Bearer {token}"}
     
@@ -113,30 +113,30 @@ def test_ranking_update(token):
                 print(f"Ranking update status: {response.status_code}")
                 
                 if response.status_code == 200:
-                    print("✅ Ranking update successful")
+                    print("Ranking update successful")
                 else:
-                    print(f"❌ Ranking update failed: {response.text}")
+                    print(f"Ranking update failed: {response.text}")
             else:
-                print("⚠️  No registrations found to test ranking update")
+                print("No registrations found to test ranking update")
         else:
-            print("❌ Could not get registrations for ranking test")
+            print("Could not get registrations for ranking test")
             
     except Exception as e:
-        print(f"❌ Ranking update test failed: {e}")
+        print(f"Ranking update test failed: {e}")
 
 def main():
     """Main test function"""
-    print("🚀 Starting admin functionality tests...")
+    print("Starting admin functionality tests...")
     
     # Test database
     if not test_database():
-        print("\n❌ Database test failed. Exiting.")
+        print("\nDatabase test failed. Exiting.")
         sys.exit(1)
     
     # Test admin login
     token = test_admin_login()
     if not token:
-        print("\n❌ Admin login failed. Exiting.")
+        print("\nAdmin login failed. Exiting.")
         sys.exit(1)
     
     # Test admin endpoints
@@ -145,7 +145,7 @@ def main():
     # Test ranking update
     test_ranking_update(token)
     
-    print("\n✅ All tests completed!")
+    print("\nAll tests completed!")
 
 if __name__ == "__main__":
     main() 
