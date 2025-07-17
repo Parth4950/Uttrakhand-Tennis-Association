@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection  
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 partners_bp = Blueprint('partners', __name__)
 
@@ -112,6 +113,7 @@ def register_player_for_events():
 
 
 @partners_bp.route('/update-ranking', methods=['POST'])
+@jwt_required()
 def update_ranking():
     data = request.get_json()
     
@@ -122,68 +124,64 @@ def update_ranking():
     event_name = data.get('event_name')
     ranking = data.get('ranking')
 
+    # Admin check
+    current_user = get_jwt_identity()
+    if current_user != 'admin':
+        return jsonify({'error': 'Only admin can update rankings'}), 403
+
     # Validate input data
     if not player_id or not isinstance(player_id, int) or player_id <= 0:
         return jsonify({'error': 'Valid player ID is required'}), 400
-    
     if not event_name or not isinstance(event_name, str) or not event_name.strip():
         return jsonify({'error': 'Valid event name is required'}), 400
-    
     if not ranking or not isinstance(ranking, int) or ranking <= 0 or ranking > 1000:
         return jsonify({'error': 'Ranking must be a positive number between 1 and 1000'}), 400
 
     connection = None
     cursor = None
-
     try:
         connection = get_db_connection()
         if not connection:
             return jsonify({'error': 'Database connection failed'}), 500
-
         cursor = connection.cursor()
-        
-        cursor.execute("SELECT id, name FROM tbl_players WHERE id = %s", (player_id,))
-        player = cursor.fetchone()
-        if not player:
-            return jsonify({'error': f'Player with ID {player_id} not found'}), 404
-        
-        cursor.execute("SELECT event_name FROM tbl_eventname WHERE event_name = %s", (event_name,))
-        event = cursor.fetchone()
-        if not event:
-            return jsonify({'error': f'Event "{event_name}" not found'}), 404
-        
-        # Check if the registration exists
-        check_query = """
-        SELECT id FROM tbl_partners 
-        WHERE user_id = %s AND event_name = %s
-        """
-        cursor.execute(check_query, (player_id, event_name))
-        existing = cursor.fetchone()
-        
-        if not existing:
-            return jsonify({'error': f'Player {player[1]} (ID: {player_id}) is not registered for event "{event_name}"'}), 404
 
-        # Update the ranking
-        query = """
-        UPDATE tbl_partners 
-        SET ranking = %s 
-        WHERE user_id = %s AND event_name = %s
-        """
-        cursor.execute(query, (ranking, player_id, event_name))
+        # Get the team (user_id and partner_id) for this player/event
+        cursor.execute("SELECT partner_id FROM tbl_partners WHERE user_id = %s AND event_name = %s", (player_id, event_name))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'error': 'Player is not registered for this event'}), 404
+        partner_id = row[0]
+
+        # Check if the ranking is already used for this event by another team
+        cursor.execute("""
+            SELECT user_id, partner_id FROM tbl_partners 
+            WHERE event_name = %s AND ranking = %s
+              AND ((user_id != %s AND (partner_id IS NULL OR partner_id != %s))
+                   OR (partner_id IS NOT NULL AND partner_id != %s AND user_id != %s))
+        """, (event_name, ranking, player_id, partner_id, player_id, partner_id))
+        duplicate = cursor.fetchone()
+        if duplicate:
+            return jsonify({'error': 'This ranking is already assigned to another team for this event'}), 400
+
+        # Update ranking for both members of the team (if doubles)
+        if partner_id:
+            # Update both user_id and partner_id rows
+            cursor.execute("""
+                UPDATE tbl_partners SET ranking = %s 
+                WHERE event_name = %s AND ((user_id = %s AND partner_id = %s) OR (user_id = %s AND partner_id = %s))
+            """, (ranking, event_name, player_id, partner_id, partner_id, player_id))
+        else:
+            # Singles: just update this row
+            cursor.execute("""
+                UPDATE tbl_partners SET ranking = %s 
+                WHERE event_name = %s AND user_id = %s
+            """, (ranking, event_name, player_id))
         connection.commit()
-
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'No matching registration found to update'}), 404
-
-        print(f"Successfully updated ranking for player {player[1]} (ID: {player_id}) in event {event_name} to {ranking}")
         return jsonify({'message': 'Ranking updated successfully'})
-        
     except Exception as e:
-        print(f"Error updating ranking: {e}")
         if connection:
             connection.rollback()
         return jsonify({'error': f'Database error: {str(e)}'}), 500
-        
     finally:
         if cursor:
             cursor.close()
