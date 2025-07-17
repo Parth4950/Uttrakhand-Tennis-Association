@@ -8,13 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Shield, Trophy, Save, LogOut, RefreshCw, AlertCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/services/api";
-import { jwtDecode } from "jwt-decode";
-
-// Add type for JWT payload
-interface JwtPayload {
-  sub: string;
-  [key: string]: any;
-}
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -43,7 +36,6 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const events = [
     "Men's Singles",
@@ -108,25 +100,6 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
     console.log('AdminDashboard mounted');
     loadAllRegistrations();
   }, [loadAllRegistrations]);
-
-  useEffect(() => {
-    // Check for admin JWT
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const decoded = jwtDecode<JwtPayload>(token);
-        if (decoded && decoded.sub === 'admin') {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch {
-        setIsAdmin(false);
-      }
-    } else {
-      setIsAdmin(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (selectedEvent) {
@@ -415,25 +388,23 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                     <h4 className="text-lg font-medium">
                       Teams in {selectedEvent} ({filteredRegistrations.length} players)
                     </h4>
-                    {isAdmin && (
-                      <Button
-                        onClick={saveRankings}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={loading || savingRankings || !hasUnsavedChanges}
-                      >
-                        {savingRankings ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Rankings
-                          </>
-                        )}
-                      </Button>
-                    )}
+                    <Button
+                      onClick={saveRankings}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={loading || savingRankings || !hasUnsavedChanges}
+                    >
+                      {savingRankings ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Rankings
+                        </>
+                      )}
+                    </Button>
                   </div>
                   
                   {/* Show summary of changes to be saved */}
@@ -496,32 +467,26 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                               <TableCell>{registration.city}</TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-2">
-                                  {isAdmin ? (
-                                    <Input
-                                      type="number"
-                                      placeholder="Rank"
-                                      value={rankings[`${registration.player_id}-${registration.event_name}`] || ""}
-                                      onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
-                                      className="w-20"
-                                      min="1"
-                                      max="1000"
-                                      disabled={savingRankings}
-                                    />
-                                  ) : (
-                                    <span>{registration.ranking ? registration.ranking : "-"}</span>
-                                  )}
-                                  {isAdmin && (
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="outline"
-                                      title="Copy this ranking to all events for this player"
-                                      onClick={() => handleCopyRankingToAllEvents(registration.player_id, registration.event_name)}
-                                      disabled={savingRankings}
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                  <Input
+                                    type="number"
+                                    placeholder="Rank"
+                                    value={rankings[`${registration.player_id}-${registration.event_name}`] || ""}
+                                    onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
+                                    className="w-20"
+                                    min="1"
+                                    max="1000"
+                                    disabled={savingRankings}
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="outline"
+                                    title="Copy this ranking to all events for this player"
+                                    onClick={() => handleCopyRankingToAllEvents(registration.player_id, registration.event_name)}
+                                    disabled={savingRankings}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </TableCell>
                               <TableCell className="text-xs text-gray-600 max-w-xs truncate" title={allEventsInfo}>
