@@ -26,11 +26,15 @@ interface Registration {
   ranking: number | null;
 }
 
+// Helper to check if event is doubles
+const isDoublesEvent = (event: string) => ["Men's Doubles", "Women's Doubles", "Mixed Doubles"].includes(event);
+
 const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   const [selectedEvent, setSelectedEvent] = useState("");
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
   const [rankings, setRankings] = useState<{ [key: string]: string }>({});
+  const [teamRankings, setTeamRankings] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [savingRankings, setSavingRankings] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,11 +106,27 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
   }, [loadAllRegistrations]);
 
   useEffect(() => {
-    if (selectedEvent) {
+    if (selectedEvent && isDoublesEvent(selectedEvent)) {
+      // Group by team (player1 + player2)
+      const teams: { [key: string]: Registration[] } = {};
+      registrations.filter(reg => reg.event_name === selectedEvent).forEach(reg => {
+        const teamKey = [reg.player_id, reg.partner_id].sort().join('-');
+        if (!teams[teamKey]) teams[teamKey] = [];
+        teams[teamKey].push(reg);
+      });
+      setFilteredRegistrations(Object.values(teams).map(teamRegs => teamRegs[0]));
+      // Load existing team rankings
+      const eventTeamRankings: { [key: string]: string } = {};
+      Object.entries(teams).forEach(([teamKey, regs]) => {
+        const ranking = regs[0].ranking;
+        if (ranking) eventTeamRankings[teamKey] = ranking.toString();
+      });
+      setTeamRankings(eventTeamRankings);
+      setHasUnsavedChanges(false);
+    } else if (selectedEvent) {
+      // Singles logic (unchanged)
       const filtered = registrations.filter(reg => reg.event_name === selectedEvent);
       setFilteredRegistrations(filtered);
-      
-      // Load existing rankings for this event
       const eventRankings: { [key: string]: string } = {};
       filtered.forEach(reg => {
         if (reg.ranking) {
@@ -118,6 +138,7 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
     } else {
       setFilteredRegistrations([]);
       setRankings({});
+      setTeamRankings({});
       setHasUnsavedChanges(false);
     }
   }, [selectedEvent, registrations]);
@@ -177,6 +198,20 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       title: "Ranking Copied",
       description: "Ranking copied to all events for this player.",
     });
+  }
+
+  function handleTeamRankingChange(playerId: number, partnerId: number | null, ranking: string) {
+    if (ranking !== "" && !validateRanking(ranking)) {
+      toast({
+        title: "Invalid Ranking",
+        description: "Please enter a valid number between 1 and 1000",
+        variant: "destructive",
+      });
+      return;
+    }
+    const teamKey = [playerId, partnerId].sort().join('-');
+    setTeamRankings(prev => ({ ...prev, [teamKey]: ranking }));
+    setHasUnsavedChanges(true);
   }
 
   async function saveRankings() {
@@ -256,6 +291,78 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       toast({
         title: "Error",
         description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRankings(false);
+    }
+  }
+
+  async function saveTeamRankings() {
+    if (!hasUnsavedChanges) {
+      toast({
+        title: "No Changes",
+        description: "No ranking changes to save.",
+      });
+      return;
+    }
+    try {
+      setSavingRankings(true);
+      // Only update rankings for visible teams
+      const validTeams = filteredRegistrations.map(reg => [reg.player_id, reg.partner_id].sort().join('-'));
+      const updates = Object.entries(teamRankings)
+        .filter(([teamKey, ranking]) => validTeams.includes(teamKey) && ranking !== "")
+        .map(([teamKey, ranking]) => {
+          const [playerId, partnerId] = teamKey.split('-');
+          return {
+            player_id: parseInt(playerId),
+            partner_id: parseInt(partnerId),
+            event_name: selectedEvent,
+            ranking: parseInt(ranking)
+          };
+        });
+      if (updates.length === 0) {
+        toast({
+          title: "No Rankings to Save",
+          description: "No valid rankings found to save.",
+        });
+        return;
+      }
+      const successfulUpdates = [];
+      const failedUpdates = [];
+      for (const update of updates) {
+        try {
+          // Update ranking for both player and partner (if present)
+          await apiService.updateRanking(update.player_id, update.event_name, update.ranking);
+          successfulUpdates.push({ ...update, player_id: update.player_id });
+          if (update.partner_id) {
+            await apiService.updateRanking(update.partner_id, update.event_name, update.ranking);
+            successfulUpdates.push({ ...update, player_id: update.partner_id });
+          }
+        } catch (error) {
+          failedUpdates.push({ ...update, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+      if (successfulUpdates.length > 0) {
+        toast({
+          title: "Rankings Partially Saved",
+          description: `Successfully saved ${successfulUpdates.length} ranking(s).${failedUpdates.length > 0 ? ` ${failedUpdates.length} failed.` : ''}`,
+        });
+      }
+      if (failedUpdates.length > 0) {
+        const errorMessage = failedUpdates.map(f => `Team ${f.player_id} & ${f.partner_id}: ${f.error}`).join(', ');
+        toast({
+          title: "Some Rankings Failed to Save",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+      setHasUnsavedChanges(false);
+      await loadAllRegistrations();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to save rankings',
         variant: "destructive",
       });
     } finally {
@@ -493,6 +600,69 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                               </TableCell>
                               <TableCell className="text-xs text-gray-600 max-w-xs truncate" title={allEventsInfo}>
                                 {allEventsInfo}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {!loading && !error && selectedEvent && isDoublesEvent(selectedEvent) && filteredRegistrations.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-medium">
+                      Teams in {selectedEvent} ({filteredRegistrations.length} teams)
+                    </h4>
+                    <Button
+                      onClick={saveTeamRankings}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={loading || savingRankings || !hasUnsavedChanges}
+                    >
+                      {savingRankings ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Submit Rankings
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">S.No</TableHead>
+                          <TableHead>Player 1</TableHead>
+                          <TableHead>Player 2</TableHead>
+                          <TableHead className="w-32">Ranking</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRegistrations.map((registration, index) => {
+                          const teamKey = [registration.player_id, registration.partner_id].sort().join('-');
+                          return (
+                            <TableRow key={teamKey}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell className="font-medium">{registration.player_name}</TableCell>
+                              <TableCell>{registration.partner_name || 'No partner assigned'}</TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  placeholder="Rank"
+                                  value={teamRankings[teamKey] || ""}
+                                  onChange={(e) => handleTeamRankingChange(registration.player_id, registration.partner_id, e.target.value)}
+                                  className="w-20"
+                                  min="1"
+                                  max="1000"
+                                  disabled={savingRankings}
+                                />
                               </TableCell>
                             </TableRow>
                           );
