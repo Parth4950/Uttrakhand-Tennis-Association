@@ -150,6 +150,10 @@ const UserDashboard = ({ user, onBack, onHome }: UserDashboardProps) => {
                     <p className="text-gray-700">{player.name || 'Not provided'}</p>
                   </div>
                   <div>
+                    <Label className="font-medium">Gender:</Label>
+                    <p className="text-gray-700">{player.gender ? player.gender.charAt(0).toUpperCase() + player.gender.slice(1) : 'Not provided'}</p>
+                  </div>
+                  <div>
                     <Label className="font-medium">WhatsApp:</Label>
                     <p className="text-gray-700">{player.whatsapp_number || 'Not provided'}</p>
                   </div>
