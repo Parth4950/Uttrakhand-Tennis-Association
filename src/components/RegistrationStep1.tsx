@@ -17,6 +17,7 @@ const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1
   const [formData, setFormData] = useState<PlayerData>({
     ...initialData,
     feePaid: initialData.feePaid ?? false,
+    gender: initialData.gender || "", // <-- Add gender default
   });
   useEffect(() => {
     if (initialData.id) {
@@ -71,6 +72,10 @@ const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1
     
     if (!formData.playingExperience) {
       errors.playingExperience = 'Playing experience is required';
+    }
+
+    if (!formData.gender) {
+      errors.gender = 'Gender is required';
     }
     
     setFieldErrors(errors);
@@ -170,6 +175,25 @@ const RegistrationStep1 = ({ initialData, onNext, isLoading }: RegistrationStep1
             disabled={isLoading}
           />
           {fieldErrors.emergencyContact && <p className="text-red-500 text-sm mt-1">{fieldErrors.emergencyContact}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="gender">Gender *</Label>
+          <Select
+            value={formData.gender}
+            onValueChange={(value) => handleInputChange("gender", value)}
+            disabled={isLoading}
+          >
+            <SelectTrigger className={`mt-1 ${fieldErrors.gender ? 'border-red-500' : ''}`}>
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          {fieldErrors.gender && <p className="text-red-500 text-sm mt-1">{fieldErrors.gender}</p>}
         </div>
       </div>
       

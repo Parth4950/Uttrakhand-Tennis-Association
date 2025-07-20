@@ -19,6 +19,14 @@ interface AvailablePartner {
   has_partner: boolean;
 }
 
+// Add a helper to determine gender filter for an event
+function getGenderFilter(eventName: string): string | undefined {
+  if (eventName === "Women's Singles" || eventName === "Women's Doubles") return "female";
+  if (eventName === "Men's Singles" || eventName === "Men's Doubles") return "male";
+  if (eventName === "Mixed Doubles") return undefined; // both
+  return undefined;
+}
+
 const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId }: RegistrationStep2Props) => {
   const [formData, setFormData] = useState<EventSelection>(initialData);
   const [events, setEvents] = useState<string[]>([]);
@@ -31,7 +39,9 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
     
     setLoadingPartners(true);
     try {
-      const data = await apiService.getAvailablePartners(eventName, playerId);
+      // Determine gender filter for this event
+      const genderFilter = getGenderFilter(eventName);
+      const data = await apiService.getAvailablePartners(eventName, playerId, genderFilter);
       setPartners(data || []);
     } catch (error) {
       console.error('Error fetching partners:', error);

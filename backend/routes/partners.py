@@ -36,18 +36,37 @@ def get_available_partners(event_name, current_user_id):
     connection = None
     cursor = None
 
+    # Get gender filter from query params
+    gender = request.args.get('gender')
+
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        print(f"Calling procedure GetAvailablePartners with: event='{event_name}', user_id={current_user_id}")
-        cursor.callproc('GetAvailablePartners', [event_name, current_user_id])
-
-        # Try logging the stored results
+        # Build query with gender filter if provided
+        base_query = '''
+            SELECT 
+                p.id AS user_id,
+                p.name AS player_name,
+                p.gender AS gender,
+                CASE 
+                    WHEN tp.partner_id IS NOT NULL THEN TRUE
+                    ELSE FALSE
+                END AS has_partner
+            FROM tbl_players p
+            JOIN tbl_partners tp ON p.id = tp.user_id
+            WHERE tp.event_name = %s
+              AND tp.user_id != %s
+              AND (tp.partner_id IS NULL OR tp.partner_id != %s)
+        '''
+        params = [event_name, current_user_id, current_user_id]
+        if gender:
+            base_query += ' AND p.gender = %s'
+            params.append(gender)
+        cursor.execute(base_query, params)
         result = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
         partners = [dict(zip(columns, row)) for row in result]
-
         return jsonify(partners)
 
     except Exception as e:

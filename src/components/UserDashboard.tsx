@@ -31,6 +31,7 @@ interface DbPlayer {
   stay_y_or_n: boolean;
   created_at?: string;
   fee_paid?: boolean; // Added fee_paid field
+  gender: string; // <-- Add gender
   // ... any other fields
 }
 
@@ -61,6 +62,7 @@ function mapUserToPlayerData(user: unknown): PlayerData {
     shortSize: dbUser.short_size,
     foodPref: dbUser.food_pref,
     stayYorN: dbUser.stay_y_or_n,
+    gender: dbUser.gender || "",
   };
 }
 

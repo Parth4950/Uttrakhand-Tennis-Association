@@ -23,6 +23,7 @@ CREATE TABLE tbl_players (
     food_pref VARCHAR(255),
     stay_y_or_n BOOLEAN DEFAULT FALSE,
     fee_paid BOOLEAN DEFAULT FALSE,
+    gender VARCHAR(10) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

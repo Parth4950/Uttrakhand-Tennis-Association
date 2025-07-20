@@ -36,7 +36,8 @@ def create_or_update_player():
                 UPDATE tbl_players SET
                     name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
                     shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s,
-                    address = %s, emergency_contact = %s, playing_experience = %s, medical_conditions = %s
+                    address = %s, emergency_contact = %s, playing_experience = %s, medical_conditions = %s,
+                    gender = %s
                 WHERE id = %s
             """
             values = (
@@ -54,6 +55,7 @@ def create_or_update_player():
                 data.get('emergency_contact'),
                 data.get('playing_experience'),
                 data.get('medical_conditions'),
+                data.get('gender'),
                 player_id
             )
             cursor.execute(query, values)
@@ -69,9 +71,9 @@ def create_or_update_player():
                 INSERT INTO tbl_players (
                     name, whatsapp_number, date_of_birth, email, city, 
                     shirt_size, short_size, food_pref, stay_y_or_n, fee_paid,
-                    address, emergency_contact, playing_experience, medical_conditions
+                    address, emergency_contact, playing_experience, medical_conditions, gender
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 data.get('name'),
@@ -87,7 +89,8 @@ def create_or_update_player():
                 data.get('address'),
                 data.get('emergency_contact'),
                 data.get('playing_experience'),
-                data.get('medical_conditions')
+                data.get('medical_conditions'),
+                data.get('gender')
             )
             cursor.execute(query, values)
             connection.commit()
@@ -216,7 +219,8 @@ def update_player(player_id):
             UPDATE tbl_players SET
                 name = %s, whatsapp_number = %s, date_of_birth = %s, email = %s, city = %s,
                 shirt_size = %s, short_size = %s, food_pref = %s, stay_y_or_n = %s, fee_paid = %s,
-                address = %s, emergency_contact = %s, playing_experience = %s, medical_conditions = %s
+                address = %s, emergency_contact = %s, playing_experience = %s, medical_conditions = %s,
+                gender = %s
             WHERE id = %s
         """
         values = (
@@ -234,6 +238,7 @@ def update_player(player_id):
             data.get('emergency_contact'),
             data.get('playing_experience'),
             data.get('medical_conditions'),
+            data.get('gender'),
             player_id
         )
         cursor.execute(query, values)

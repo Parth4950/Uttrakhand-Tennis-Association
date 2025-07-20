@@ -274,13 +274,17 @@ class ApiService {
     });
   }
 
- async getAvailablePartners(eventName: string, currentUserId: number) {
+ async getAvailablePartners(eventName: string, currentUserId: number, gender?: string) {
   if (!eventName?.trim() || !currentUserId || currentUserId <= 0) {
     throw new Error('Valid event name and user ID are required');
   }
   
   const encodedEvent = encodeURIComponent(eventName); 
-  return this.request(`/api/partners/available/${encodedEvent}/${currentUserId}`);
+  let url = `/api/partners/available/${encodedEvent}/${currentUserId}`;
+  if (gender) {
+    url += `?gender=${encodeURIComponent(gender)}`;
+  }
+  return this.request(url);
 }
 
   async updatePartnerRelationship(eventName: string, user1Id: number, user2Id: number) {

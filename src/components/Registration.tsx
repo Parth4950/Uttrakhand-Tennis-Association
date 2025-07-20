@@ -24,6 +24,7 @@ export interface PlayerData {
   stayYorN: boolean;
   feePaid?: boolean;
   events?: { event_name: string; partner_id?: number }[];
+  gender: string; // <-- Add gender
 }
 
 interface DbPlayer {
@@ -99,6 +100,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       foodPref: "",
       stayYorN: false,
       feePaid: false,
+      gender: "", // <-- Add gender default
     }
   );
   // Pre-fill eventData if initialData has event info
@@ -140,7 +142,8 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
         address: data.address,
         emergency_contact: data.emergencyContact,
         playing_experience: data.playingExperience,
-        medical_conditions: data.medicalConditions
+        medical_conditions: data.medicalConditions,
+        gender: data.gender, // <-- Pass gender
       };
       console.log("[DEBUG] Sending player payload", playerPayload);
 
