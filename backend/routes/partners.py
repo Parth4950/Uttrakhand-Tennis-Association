@@ -39,19 +39,16 @@ def get_available_partners(event_name, current_user_id):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-
-        print(f"Calling procedure GetAvailablePartners with: event='{event_name}', user_id={current_user_id}")
-        cursor.callproc('GetAvailablePartners', [event_name, current_user_id])
-
-        # Try logging the stored results
-        result = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
-        partners = [dict(zip(columns, row)) for row in result]
-
+        cursor.execute(
+            """SELECT p.id, p.name
+                   FROM tbl_players p
+                   JOIN tbl_partners t ON p.id = t.user_id
+                   WHERE t.event_name = %s AND p.id != %s""",
+            (event_name, current_user_id)
+        )
+        partners = [{'id': row[0], 'name': row[1]} for row in cursor.fetchall()]
         return jsonify(partners)
-
     except Exception as e:
-        print("Error in get_available_partners:", str(e))
         return jsonify({'error': str(e)}), 500
     finally:
         if cursor: cursor.close()
@@ -65,8 +62,8 @@ def get_available_partners(event_name, current_user_id):
 def update_partner_relationship():
     data = request.get_json()
     event_name = data.get('event_name')
-    user1_id = data.get('user1_id')
-    user2_id = data.get('user2_id')
+    user_id = data.get('user_id')  # The player whose partner is being set
+    partner_id = data.get('partner_id')
 
     connection = None
     cursor = None
@@ -74,7 +71,26 @@ def update_partner_relationship():
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-        cursor.callproc('UpdatePartnerRelationship', [event_name, user1_id, user2_id])
+        # Update user's partner for the event
+        cursor.execute(
+            """UPDATE tbl_partners SET partner_id = %s WHERE user_id = %s AND event_name = %s""",
+            (partner_id, user_id, event_name)
+        )
+        # Ensure the reverse relationship exists
+        cursor.execute(
+            """SELECT id FROM tbl_partners WHERE user_id = %s AND event_name = %s""",
+            (partner_id, event_name)
+        )
+        if cursor.fetchone() is None:
+            cursor.execute(
+                """INSERT INTO tbl_partners (event_name, user_id, partner_id) VALUES (%s, %s, %s)""",
+                (event_name, partner_id, user_id)
+            )
+        else:
+            cursor.execute(
+                """UPDATE tbl_partners SET partner_id = %s WHERE user_id = %s AND event_name = %s""",
+                (user_id, partner_id, event_name)
+            )
         connection.commit()
         return jsonify({'message': 'Partner relationship updated successfully'})
     except Exception as e:
@@ -88,10 +104,7 @@ def update_partner_relationship():
 def register_player_for_events():
     data = request.get_json()
     player_id = data.get('player_id')
-    event1_name = data.get('event1_name')
-    partner1_id = data.get('partner1_id')
-    event2_name = data.get('event2_name')
-    partner2_id = data.get('partner2_id')
+    events = data.get('events', [])  # Expecting a list of event names
 
     connection = None
     cursor = None
@@ -99,9 +112,12 @@ def register_player_for_events():
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-        cursor.callproc('RegisterPlayerForEvents', [
-            player_id, event1_name, partner1_id, event2_name, partner2_id
-        ])
+        for event in events:
+            cursor.execute(
+                """INSERT INTO tbl_partners (event_name, user_id, partner_id)
+                       VALUES (%s, %s, NULL)""",
+                (event, player_id)
+            )
         connection.commit()
         return jsonify({'message': 'Player registered for events successfully'})
     except Exception as e:
