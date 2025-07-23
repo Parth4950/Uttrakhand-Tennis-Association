@@ -583,9 +583,6 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                         <TableRow>
                           <TableHead className="w-16">S.No</TableHead>
                           <TableHead>Player Name</TableHead>
-                          <TableHead>WhatsApp</TableHead>
-                          <TableHead>City</TableHead>
-                          <TableHead>Partner</TableHead>
                           <TableHead className="w-32">Ranking</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -596,9 +593,6 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                             <TableRow key={key}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell className="font-medium">{registration.player_name}</TableCell>
-                              <TableCell>{registration.whatsapp_number}</TableCell>
-                              <TableCell>{registration.city}</TableCell>
-                              <TableCell>{'No partner'}</TableCell>
                               <TableCell>
                                 <Input
                                   type="number"
