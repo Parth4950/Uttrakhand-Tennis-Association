@@ -552,6 +552,74 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
                 </div>
               )}
 
+              {/* Table for singles events */}
+              {!loading && !error && selectedEvent && !isDoublesEvent(selectedEvent) && filteredRegistrations.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-medium">
+                      Players in {selectedEvent}
+                    </h4>
+                    <Button
+                      onClick={saveRankings}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={loading || savingRankings || !hasUnsavedChanges}
+                    >
+                      {savingRankings ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Submit Rankings
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">S.No</TableHead>
+                          <TableHead>Player Name</TableHead>
+                          <TableHead>WhatsApp</TableHead>
+                          <TableHead>City</TableHead>
+                          <TableHead>Partner</TableHead>
+                          <TableHead className="w-32">Ranking</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRegistrations.map((registration, index) => {
+                          const key = `${registration.player_id}-${registration.event_name}`;
+                          return (
+                            <TableRow key={key}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell className="font-medium">{registration.player_name}</TableCell>
+                              <TableCell>{registration.whatsapp_number}</TableCell>
+                              <TableCell>{registration.city}</TableCell>
+                              <TableCell>{'No partner'}</TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  placeholder="Rank"
+                                  value={rankings[key] || ""}
+                                  onChange={(e) => handleRankingChange(registration.player_id, registration.event_name, e.target.value)}
+                                  className="w-20"
+                                  min="1"
+                                  max="1000"
+                                  disabled={savingRankings}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
               {!loading && !error && selectedEvent && filteredRegistrations.length === 0 && registrations.length > 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
