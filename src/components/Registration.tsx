@@ -280,6 +280,7 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
                 initialData={eventData}
                 isLoading={isLoading}
                 playerId={playerId}
+                gender={playerData.gender}
               />
             )}
           </CardContent>

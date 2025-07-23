@@ -11,12 +11,17 @@ interface RegistrationStep2Props {
   initialData: EventSelection;
   isLoading: boolean;
   playerId: number | null;
+  gender: string;
 }
 
 interface AvailablePartner {
   user_id: number;
   player_name: string;
   has_partner: boolean;
+}
+
+interface Event {
+  event_name: string;
 }
 
 // Add a helper to determine gender filter for an event
@@ -27,7 +32,22 @@ function getGenderFilter(eventName: string): string | undefined {
   return undefined;
 }
 
-const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId }: RegistrationStep2Props) => {
+// Gender-based event filtering helper
+function getEventsForGender(events: string[], gender: string): string[] {
+  if (gender === "male") {
+    return events.filter(e => ["Men's Singles", "Men's Doubles", "Mixed Doubles"].includes(e));
+  } else if (gender === "female") {
+    return events.filter(e => ["Women's Singles", "Women's Doubles", "Mixed Doubles"].includes(e));
+  }
+  return events;
+}
+
+// Helper to check if event is singles
+function isSinglesEvent(eventName: string): boolean {
+  return eventName === "Men's Singles" || eventName === "Women's Singles";
+}
+
+const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId, gender }: RegistrationStep2Props) => {
   const [formData, setFormData] = useState<EventSelection>(initialData);
   const [events, setEvents] = useState<string[]>([]);
   const [partnersForEvent1, setPartnersForEvent1] = useState<AvailablePartner[]>([]);
@@ -55,8 +75,8 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const data = await apiService.getEvents();
-        setEvents(data.map((event: any) => event.event_name));
+        const data: Event[] = await apiService.getEvents();
+        setEvents(data.map((event) => event.event_name));
       } catch (error) {
         console.error('Error fetching events:', error);
       }
@@ -122,18 +142,24 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
       return;
     }
     
-    // Validate that if an event is selected, a partner is also selected
-    if (formData.event1 && !formData.partner1) {
+    // Singles event: partner should be empty or 'no partner', skip partner validation
+    if (formData.event1 && !isSinglesEvent(formData.event1) && !formData.partner1) {
       alert("Please select a partner for Event 1");
       return;
     }
     
-    if (formData.event2 && !formData.partner2) {
+    if (formData.event2 && !isSinglesEvent(formData.event2) && !formData.partner2) {
       alert("Please select a partner for Event 2");
       return;
     }
     
-    onSubmit(formData);
+    // If singles, set partner to empty string
+    const submitData = {
+      ...formData,
+      partner1: isSinglesEvent(formData.event1) ? "" : formData.partner1,
+      partner2: isSinglesEvent(formData.event2) ? "" : formData.partner2,
+    };
+    onSubmit(submitData);
   };
 
   return (
@@ -157,7 +183,7 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="no-event">No Event Selected</SelectItem>
-                  {events.map((event) => (
+                  {getEventsForGender(events, gender).map((event) => (
                     <SelectItem key={event} value={event}>
                       {event}
                     </SelectItem>
@@ -165,34 +191,43 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
                 </SelectContent>
               </Select>
             </div>
-            
             <div>
               <Label htmlFor="partner1">Select Partner</Label>
-              <Select
-                value={formData.partner1 || "no-partner"}
-                onValueChange={(value) => handleInputChange("partner1", value === "no-partner" ? "" : value)}
-                disabled={!formData.event1 || loadingPartners}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={loadingPartners ? "Loading partners..." : "Choose your partner"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not-registered">Partner not registered yet</SelectItem>
-                  {partnersForEvent1.map((partner) => (
-                    <SelectItem 
-                      key={partner.user_id} 
-                      value={partner.user_id.toString()}
-                      disabled={partner.has_partner}
-                    >
-                      {partner.player_name} {partner.has_partner ? "(Already has partner)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isSinglesEvent(formData.event1) ? (
+                <Select value="no-partner" disabled>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue>No partner</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-partner">No partner</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select
+                  value={formData.partner1 || "no-partner"}
+                  onValueChange={(value) => handleInputChange("partner1", value === "no-partner" ? "" : value)}
+                  disabled={!formData.event1 || loadingPartners}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={loadingPartners ? "Loading partners..." : "Choose your partner"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not-registered">Partner not registered yet</SelectItem>
+                    {partnersForEvent1.map((partner) => (
+                      <SelectItem 
+                        key={partner.user_id} 
+                        value={partner.user_id.toString()}
+                        disabled={partner.has_partner}
+                      >
+                        {partner.player_name} {partner.has_partner ? "(Already has partner)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </div>
-        
         {/* Event 2 */}
         <div className="p-4 border rounded-lg bg-gray-50">
           <h4 className="text-lg font-medium mb-4">Event 2 (Optional)</h4>
@@ -208,7 +243,7 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="no-event">No Event Selected</SelectItem>
-                  {events
+                  {getEventsForGender(events, gender)
                     .filter(event => event !== formData.event1)
                     .map((event) => (
                       <SelectItem key={event} value={event}>
@@ -218,30 +253,40 @@ const RegistrationStep2 = ({ onBack, onSubmit, initialData, isLoading, playerId 
                 </SelectContent>
               </Select>
             </div>
-            
             <div>
               <Label htmlFor="partner2">Select Partner</Label>
-              <Select
-                value={formData.partner2 || "no-partner"}
-                onValueChange={(value) => handleInputChange("partner2", value === "no-partner" ? "" : value)}
-                disabled={!formData.event2 || loadingPartners}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={loadingPartners ? "Loading partners..." : "Choose your partner"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not-registered">Partner not registered yet</SelectItem>
-                  {partnersForEvent2.map((partner) => (
-                    <SelectItem 
-                      key={partner.user_id} 
-                      value={partner.user_id.toString()}
-                      disabled={partner.has_partner}
-                    >
-                      {partner.player_name} {partner.has_partner ? "(Already has partner)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isSinglesEvent(formData.event2) ? (
+                <Select value="no-partner" disabled>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue>No partner</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-partner">No partner</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select
+                  value={formData.partner2 || "no-partner"}
+                  onValueChange={(value) => handleInputChange("partner2", value === "no-partner" ? "" : value)}
+                  disabled={!formData.event2 || loadingPartners}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder={loadingPartners ? "Loading partners..." : "Choose your partner"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not-registered">Partner not registered yet</SelectItem>
+                    {partnersForEvent2.map((partner) => (
+                      <SelectItem 
+                        key={partner.user_id} 
+                        value={partner.user_id.toString()}
+                        disabled={partner.has_partner}
+                      >
+                        {partner.player_name} {partner.has_partner ? "(Already has partner)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </div>
