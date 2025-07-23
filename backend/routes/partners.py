@@ -182,16 +182,6 @@ def update_ranking():
         if not existing:
             return jsonify({'error': f'Player {player[1]} (ID: {player_id}) is not registered for event "{event_name}"'}), 404
 
-        # Check if the ranking is already used for this event by another player
-        duplicate_ranking_query = """
-        SELECT user_id FROM tbl_partners 
-        WHERE event_name = %s AND ranking = %s AND user_id != %s
-        """
-        cursor.execute(duplicate_ranking_query, (event_name, ranking, player_id))
-        duplicate = cursor.fetchone()
-        if duplicate:
-            return jsonify({'error': f'Ranking {ranking} is already assigned to another player for event "{event_name}". Please choose a different ranking.'}), 400
-
         # Update the ranking
         query = """
         UPDATE tbl_partners 
