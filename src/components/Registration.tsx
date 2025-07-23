@@ -225,26 +225,70 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
       }
       // Register for each event
       for (const partner of partnersToCreate) {
-        await apiService.createPartner(partner);
+        try {
+          await apiService.createPartner(partner);
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          toast({
+            title: "Registration Error (createPartner)",
+            description: errorMsg,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
         // If doubles/mixed and partner_id is present, also register the partner (if not already registered)
         if (partner.partner_id) {
-          // Check if partner already has a row for this event
-          const partnerDashboard = await apiService.getPlayerDashboard(partner.partner_id);
+          let partnerDashboard;
+          try {
+            partnerDashboard = await apiService.getPlayerDashboard(partner.partner_id);
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            toast({
+              title: "Registration Error (getPlayerDashboard)",
+              description: errorMsg,
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
           const alreadyRegistered = partnerDashboard.events.some(
             (e: PartnerEvent) => e.event_name === partner.event_name
           );
           if (!alreadyRegistered) {
-            await apiService.createPartner({
-              event_name: partner.event_name,
-              user_id: partner.partner_id,
-              partner_id: playerId,
-            });
+            try {
+              await apiService.createPartner({
+                event_name: partner.event_name,
+                user_id: partner.partner_id,
+                partner_id: playerId,
+              });
+            } catch (err) {
+              const errorMsg = err instanceof Error ? err.message : String(err);
+              toast({
+                title: "Registration Error (createPartner for partner)",
+                description: errorMsg,
+                variant: "destructive",
+              });
+              setIsLoading(false);
+              return;
+            }
           }
-          await apiService.updatePartnerRelationship(
-            partner.event_name,
-            playerId,
-            partner.partner_id
-          );
+          try {
+            await apiService.updatePartnerRelationship(
+              partner.event_name,
+              playerId,
+              partner.partner_id
+            );
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            toast({
+              title: "Registration Error (updatePartnerRelationship)",
+              description: errorMsg,
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
         }
       }
       setEventData(data);
