@@ -78,6 +78,13 @@ export interface EventSelection {
   partner2: string;
 }
 
+interface PartnerEvent {
+  event_name: string;
+  partner_id?: number;
+  partner_name?: string;
+  ranking?: number;
+}
+
 const Registration = ({ onBack, initialData }: RegistrationProps) => {
   const editMode = !!initialData;
   type PlayerDataWithEvents = PlayerData & { events?: { event_name: string; partner_id?: number }[] };
@@ -216,9 +223,23 @@ const Registration = ({ onBack, initialData }: RegistrationProps) => {
           partner_id: data.partner2 === "not-registered" ? null : parseInt(data.partner2) || null,
         });
       }
+      // Register for each event
       for (const partner of partnersToCreate) {
         await apiService.createPartner(partner);
+        // If doubles/mixed and partner_id is present, also register the partner (if not already registered)
         if (partner.partner_id) {
+          // Check if partner already has a row for this event
+          const partnerDashboard = await apiService.getPlayerDashboard(partner.partner_id);
+          const alreadyRegistered = partnerDashboard.events.some(
+            (e: PartnerEvent) => e.event_name === partner.event_name
+          );
+          if (!alreadyRegistered) {
+            await apiService.createPartner({
+              event_name: partner.event_name,
+              user_id: partner.partner_id,
+              partner_id: playerId,
+            });
+          }
           await apiService.updatePartnerRelationship(
             partner.event_name,
             playerId,
