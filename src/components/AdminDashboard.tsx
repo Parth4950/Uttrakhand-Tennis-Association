@@ -110,16 +110,29 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       // Group by team (player1 + player2)
       const teams: { [key: string]: Registration[] } = {};
       registrations.filter(reg => reg.event_name === selectedEvent).forEach(reg => {
+        // Skip registrations without partners for doubles events
+        if (!reg.partner_id) {
+          console.warn(`Skipping registration for ${reg.player_name} in ${selectedEvent} - no partner assigned`);
+          return;
+        }
+        
         const teamKey = [reg.player_id, reg.partner_id].sort().join('-');
         if (!teams[teamKey]) teams[teamKey] = [];
         teams[teamKey].push(reg);
       });
-      setFilteredRegistrations(Object.values(teams).map(teamRegs => teamRegs[0]));
-      // Load existing team rankings
+      
+      // Only show teams that have both players
+      const validTeams = Object.entries(teams).filter(([teamKey, regs]) => regs.length >= 1);
+      setFilteredRegistrations(validTeams.map(([teamKey, regs]) => regs[0]));
+      
+      // Load existing team rankings - use the ranking from either player in the team
       const eventTeamRankings: { [key: string]: string } = {};
-      Object.entries(teams).forEach(([teamKey, regs]) => {
-        const ranking = regs[0].ranking;
-        if (ranking) eventTeamRankings[teamKey] = ranking.toString();
+      validTeams.forEach(([teamKey, regs]) => {
+        // Find the ranking from either player in the team
+        const ranking = regs.find(reg => reg.ranking)?.ranking;
+        if (ranking) {
+          eventTeamRankings[teamKey] = ranking.toString();
+        }
       });
       setTeamRankings(eventTeamRankings);
       setHasUnsavedChanges(false);
@@ -209,6 +222,17 @@ const AdminDashboard = ({ onBack, onHome }: AdminDashboardProps) => {
       });
       return;
     }
+    
+    // Ensure partnerId is not null for doubles events
+    if (!partnerId) {
+      toast({
+        title: "Invalid Team",
+        description: "Cannot assign ranking to team without partner.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const teamKey = [playerId, partnerId].sort().join('-');
     setTeamRankings(prev => ({ ...prev, [teamKey]: ranking }));
     setHasUnsavedChanges(true);
